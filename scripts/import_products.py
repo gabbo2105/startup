@@ -35,7 +35,7 @@ except ImportError:
 
 # Configuration
 SUPABASE_URL = os.environ.get('SUPABASE_URL', 'https://wvlqjpmphfhkctupwvvd.supabase.co')
-SUPABASE_SERVICE_KEY = os.environ.get('SUPABASE_SERVICE_KEY', '')
+SUPABASE_SERVICE_KEY = os.environ.get('SUPABASE_SERVICE_KEY', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind2bHFqcG1waGZoa2N0dXB3dnZkIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MDczMzA2MiwiZXhwIjoyMDg2MzA5MDYyfQ.bPBFX3tTbf9rZz6kF7SpDLcTvyximcz8HpHV3FNthgc')
 BATCH_SIZE = 500
 
 # Supplier mapping (UUIDs assigned during migration)
