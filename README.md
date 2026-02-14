@@ -229,3 +229,17 @@ startup/
 3. ~~Creare Edge Function search~~ ✅ Hybrid search con embedding automatico
 4. ~~Configurare l'agente AI~~ ✅ Operativo su n8n
 5. **Migliorare** → Prompt agente, webhook WhatsApp/Telegram/sito
+
+Abbiamo esplorato come un sistema di ricerca moderno non si limiti a "leggere" le parole, ma cerchi di "capirne" il significato. Il modello text-embedding-3-small 🧠 è il motore invisibile che rende possibile tutto questo. Ti guiderò attraverso un riassunto dei punti chiave e poi potremo decidere insieme quale aspetto approfondire.
+
+Ecco il ruolo centrale del modello nel tuo sistema:
+
+Traduttore Universale 🌍: Il modello prende testi in linguaggio naturale (come "alcol" o "Johnnie Walker") e li traduce in vettori (liste di 1536 numeri). Questa traduzione è ciò che permette al database di confrontare concetti diversi.
+
+Architetto dello Spazio Vettoriale 📐: Grazie al suo addestramento su miliardi di frasi, il modello posiziona le parole in una "mappa" a 1536 dimensioni. Parole con significati simili finiscono vicine, permettendo al calcolo della similarità del coseno di trovarle matematicamente.
+
+Conoscenza Implicita 📚: È il modello a sapere che il whisky è un tipo di alcol. Senza questa conoscenza pre-installata nel modello 3-small, la tua ricerca restituirebbe risultati solo se le parole corrispondessero esattamente.
+
+Efficienza e Precisione ⚡: Pur essendo la versione "small", gestisce la complessità semantica in modo estremamente veloce, rendendolo ideale per essere richiamato dalle tue Edge Functions ogni volta che carichi nuovi prodotti.
+
+In sintesi, il modello è il "cervello" che trasforma un database statico in un sistema capace di intuizione.
