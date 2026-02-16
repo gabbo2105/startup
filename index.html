@@ -405,149 +405,183 @@
   function esc(t){var d=document.createElement('div');d.textContent=t;return d.innerHTML}
   function renderUser(t){return esc(t).replace(/\n/g,'<br>')}
 
-  /* ===== MATCH <li> TEXT TO PRODUCTS ===== */
-  function normalizeText(t){return t.replace(/<[^>]+>/g,'').toLowerCase().replace(/[''`]/g,'').replace(/\s+/g,' ').trim()}
+  /* ===== INLINE CART: extract product data from <li> and inject buttons ===== */
 
   /**
-   * Try to match a <li> to a product from the products array.
-   * Returns the matched product or null.
+   * Parse a top-level <li> that has nested sub-items (Fornitore, Prezzo, Unità...).
+   * Format:
+   *   <li>COCA COLA ZERO VAP 20 cl x24
+   *     <ul><li>Fornitore: ...</li><li>Prezzo: €15,92</li><li>Unità: ...</li></ul>
+   *   </li>
+   */
+  function parseStructuredLi(li){
+    var subLis=li.querySelectorAll(':scope > ul > li, :scope > ol > li');
+    if(!subLis.length)return null;
+
+    // The product name is the direct text of the li (excluding children)
+    var desc='';
+    for(var i=0;i<li.childNodes.length;i++){
+      var n=li.childNodes[i];
+      if(n.nodeType===3)desc+=n.textContent; // text node
+      else if(n.nodeName!=='UL'&&n.nodeName!=='OL'&&n.nodeName!=='BUTTON'&&n.nodeName!=='DIV'){
+        desc+=n.textContent;
+      }
+    }
+    desc=desc.replace(/\s+/g,' ').trim();
+    if(!desc||desc.length<3)return null;
+
+    var supplier='',price=null,uom='';
+    subLis.forEach(function(s){
+      var t=s.textContent.trim();
+      var tl=t.toLowerCase();
+      if(tl.indexOf('fornitore')===0){supplier=t.replace(/^[Ff]ornitore:\s*/,'').trim()}
+      else if(tl.indexOf('prezzo')===0&&tl.indexOf('unitario')===-1){
+        var pm=t.match(/€\s*(\d+[.,]\d{2})/);if(pm)price=parseFloat(pm[1].replace(',','.'));
+      }
+      else if(tl.indexOf('unit')===0){uom=t.replace(/^[Uu]nit[àa]:\s*/,'').trim()}
+    });
+
+    if(price===null)return null;
+    return{description:desc,supplier_name:supplier,price:price,selling_uom:uom};
+  }
+
+  /**
+   * Parse a flat <li> with inline product info.
+   * Formats:
+   *   "PROSECCO DOC EXTRA DRY CONTARINI CL75 (DAC SPA) – €4,30 a confezione da 6 bottiglie"
+   *   "MARMELLATA M&G ARANCIA 3 kg\nFornitore: MARR SPA – €13,15 (CT da 1 da 3 kg)"
+   */
+  function parseFlatLi(li){
+    // Skip if this li has sub-lists (handled by parseStructuredLi)
+    if(li.querySelector('ul, ol'))return null;
+    // Skip sub-detail lines (Fornitore:, Prezzo:, Unità:, Prezzo unitario:)
+    var tl=li.textContent.trim().toLowerCase();
+    if(/^(fornitore|prezzo|unit[àa]|marca|codice)/.test(tl))return null;
+
+    var text=li.textContent.replace(/\s+/g,' ').trim();
+    var priceMatch=text.match(/€\s*(\d+[.,]\d{2})/);
+    if(!priceMatch)return null;
+    var price=parseFloat(priceMatch[1].replace(',','.'));
+
+    // Extract supplier from (SUPPLIER) or "Fornitore: SUPPLIER"
+    var supplier='';
+    var suppMatch=text.match(/\(([^)]*(?:S\.?[Pp]\.?[Aa]\.?|SPA|SRL|S\.R\.L\.|Asolo|Bindi)[^)]*)\)/i);
+    if(suppMatch){supplier=suppMatch[1].trim()}
+    else{var fm=text.match(/[Ff]ornitore:\s*([^\-–—€]+)/);if(fm)supplier=fm[1].trim().replace(/\s*$/,'')}
+
+    // Description: text before supplier bracket or "Fornitore:" or price
+    var desc=text;
+    if(suppMatch){desc=text.substring(0,text.indexOf('('+suppMatch[1]+')'))}
+    else{
+      var fi=text.toLowerCase().indexOf('fornitore:');
+      if(fi>0)desc=text.substring(0,fi);
+      else{var pi=text.indexOf('€');if(pi>0)desc=text.substring(0,pi)}
+    }
+    desc=desc.replace(/[\s–—\-,]+$/,'').trim();
+
+    // UOM from after price
+    var afterPrice=text.substring(text.indexOf(priceMatch[0])+priceMatch[0].length).trim();
+    var uom=afterPrice?afterPrice.replace(/^[\s,–—\-()]+/,'').replace(/\)$/,'').trim():'';
+
+    if(!desc||desc.length<3)return null;
+    return{description:desc,supplier_name:supplier,price:price,selling_uom:uom};
+  }
+
+  /**
+   * Also try matching against the products array from <!--PRODUCTS[...]-->
    */
   function matchLiToProduct(liText, products){
     if(!products||!products.length)return null;
-    var norm=normalizeText(liText);
+    var norm=liText.replace(/<[^>]+>/g,'').toLowerCase().replace(/\s+/g,' ').trim();
     var bestMatch=null, bestScore=0;
-
     for(var i=0;i<products.length;i++){
       var p=products[i];
-      var pDesc=normalizeText(p.description||p.name||'');
+      var pDesc=(p.description||p.name||'').toLowerCase().trim();
       if(!pDesc||pDesc.length<3)continue;
-
-      // Strategy 1: full product description found inside li text
-      if(norm.indexOf(pDesc)!==-1){return p}
-
-      // Strategy 2: split product desc into words, check how many appear in li
+      if(norm.indexOf(pDesc)!==-1)return p;
       var pWords=pDesc.split(/[\s,.\-–—()\/]+/).filter(function(w){return w.length>=2});
       if(!pWords.length)continue;
       var matched=0;
-      for(var j=0;j<pWords.length;j++){
-        if(norm.indexOf(pWords[j])!==-1)matched++;
-      }
+      for(var j=0;j<pWords.length;j++){if(norm.indexOf(pWords[j])!==-1)matched++}
       var score=matched/pWords.length;
       if(score>bestScore&&score>=0.4){bestScore=score;bestMatch=p}
     }
     return bestMatch;
   }
 
-  /**
-   * Parse product info directly from a <li> text string.
-   * Handles patterns like:
-   *   "PROSECCO DOC EXTRA DRY CONTARINI CL75 (DAC SPA) – €4,30 a confezione da 6 bottiglie da 750 ml"
-   *   "MARMELLATA M&G ARANCIA 3 kg\nFornitore: MARR SPA – €13,15 (CT da 1 da 3 kg)"
-   * Returns {description, supplier_name, price, selling_uom} or null if no price found.
-   */
-  function parseLiAsProduct(liText){
-    var text=liText.replace(/\s+/g,' ').trim();
-    // Try to find a price: €xx,xx or €xx.xx
-    var priceMatch=text.match(/€\s*(\d+[.,]\d{2})/);
-    if(!priceMatch)return null;
-    var price=parseFloat(priceMatch[1].replace(',','.'));
+  /* ===== CREATE AND ATTACH CART BUTTON TO A <li> ===== */
+  function attachCartButton(li, productData){
+    var pid=productData.id||('p-'+Math.random().toString(36).substr(2,9));
 
-    // Extract supplier: look for (SUPPLIER) or "Fornitore: SUPPLIER"
-    var supplier='';
-    var suppMatch=text.match(/\(([A-Z][A-Za-z\s.'']+(?:S\.?[Pp]\.?[Aa]\.?|SPA|SRL|S\.R\.L\.)?)\)/);
-    if(suppMatch){supplier=suppMatch[1].trim()}
-    else{var fornMatch=text.match(/[Ff]ornitore:\s*([^\-–—€]+)/);if(fornMatch)supplier=fornMatch[1].trim()}
+    var btn=document.createElement('button');
+    btn.className='li-cart-btn';
+    btn.innerHTML=CART_SVG;
+    btn.title='Aggiungi al carrello';
 
-    // Extract description: everything before the supplier bracket or "Fornitore:"
-    var desc=text;
-    if(suppMatch){desc=text.substring(0,text.indexOf('('+suppMatch[1]))}
-    else if(supplier){var fi=text.toLowerCase().indexOf('fornitore:');if(fi>0)desc=text.substring(0,fi)}
-    else{var pi=text.indexOf('€');if(pi>0)desc=text.substring(0,pi)}
-    desc=desc.replace(/[\s–—\-]+$/,'').trim();
+    var pop=document.createElement('div');
+    pop.className='li-qty-pop';
+    pop.innerHTML='<button class="lqm">−</button><input type="number" class="lqi" value="1" min="1" max="999"><button class="lqp">+</button><button class="li-pop-add">Aggiungi</button>';
 
-    // Extract UOM: text after the price
-    var uom='';
-    var afterPrice=text.substring(text.indexOf(priceMatch[0])+priceMatch[0].length).trim();
-    if(afterPrice){uom=afterPrice.replace(/^[\s,–—\-]+/,'').trim()}
+    btn.addEventListener('click',function(e){
+      e.stopPropagation();
+      document.querySelectorAll('.li-qty-pop.open').forEach(function(p){if(p!==pop)p.classList.remove('open')});
+      pop.classList.toggle('open');
+    });
+    pop.querySelector('.lqm').addEventListener('click',function(e){e.stopPropagation();var inp=pop.querySelector('.lqi');if(parseInt(inp.value)>1)inp.value=parseInt(inp.value)-1});
+    pop.querySelector('.lqp').addEventListener('click',function(e){e.stopPropagation();var inp=pop.querySelector('.lqi');inp.value=parseInt(inp.value)+1});
+    pop.querySelector('.li-pop-add').addEventListener('click',function(e){
+      e.stopPropagation();
+      var qty=parseInt(pop.querySelector('.lqi').value)||1;
+      addToCart({id:pid,description:productData.description||'Prodotto',supplier_name:productData.supplier_name||'',price:parseFloat(productData.price)||0,selling_uom:productData.selling_uom||'',qty:qty});
+      pop.classList.remove('open');
+      btn.innerHTML=CHECK_SVG;btn.classList.add('li-added');
+      setTimeout(function(){btn.innerHTML=CART_SVG;btn.classList.remove('li-added')},1500);
+    });
 
-    if(!desc||desc.length<3)return null;
-    return{description:desc,supplier_name:supplier,price:price,selling_uom:uom};
+    // Insert button right after the direct text, before any sub-list
+    var subList=li.querySelector(':scope > ul, :scope > ol');
+    if(subList){li.insertBefore(pop,subList);li.insertBefore(btn,pop)}
+    else{li.appendChild(btn);li.appendChild(pop)}
   }
 
-  /* ===== INJECT INLINE CART BUTTONS INTO <li> ELEMENTS ===== */
+  /* ===== MAIN: INJECT INLINE CART BUTTONS ===== */
   function injectInlineCartButtons(msgEl, products){
-    var lis=msgEl.querySelectorAll('.msg-body li');
-    if(!lis.length)return;
+    // Get only top-level <li> elements (not nested sub-items)
+    var topLists=msgEl.querySelectorAll('.msg-body > ul > li, .msg-body > ol > li');
+    // Fallback: if marked wraps in <p> then <ul>, try broader selector
+    if(!topLists.length)topLists=msgEl.querySelectorAll('.msg-body ul > li, .msg-body ol > li');
 
-    lis.forEach(function(li){
+    var processedLis=new Set();
+
+    topLists.forEach(function(li){
+      if(processedLis.has(li))return;
+
+      // Skip if this li is a child of another li (it's a sub-item)
+      var parentLi=li.parentElement&&li.parentElement.closest('li');
+      if(parentLi)return;
+
+      processedLis.add(li);
+
       var productData=null;
 
-      // First try matching against the products array (if available)
+      // 1. Try matching against products array
       if(products&&products.length){
         productData=matchLiToProduct(li.textContent, products);
       }
 
-      // Fallback: parse product info directly from the li text
+      // 2. Try structured format (li with sub-list of details)
       if(!productData){
-        var parsed=parseLiAsProduct(li.textContent);
-        if(parsed)productData=parsed;
+        productData=parseStructuredLi(li);
       }
 
-      if(!productData)return;
+      // 3. Try flat format (all info in one line)
+      if(!productData){
+        productData=parseFlatLi(li);
+      }
 
-      var pid=productData.id||('p-'+Math.random().toString(36).substr(2,9));
-
-      // Create the cart icon button
-      var btn=document.createElement('button');
-      btn.className='li-cart-btn';
-      btn.innerHTML=CART_SVG;
-      btn.title='Aggiungi al carrello';
-
-      // Create the qty popover
-      var pop=document.createElement('div');
-      pop.className='li-qty-pop';
-      pop.innerHTML='<button class="lqm">−</button><input type="number" class="lqi" value="1" min="1" max="999"><button class="lqp">+</button><button class="li-pop-add">Aggiungi</button>';
-
-      // Toggle popover on cart icon click
-      btn.addEventListener('click',function(e){
-        e.stopPropagation();
-        document.querySelectorAll('.li-qty-pop.open').forEach(function(p){if(p!==pop)p.classList.remove('open')});
-        pop.classList.toggle('open');
-      });
-
-      // Qty controls
-      pop.querySelector('.lqm').addEventListener('click',function(e){
-        e.stopPropagation();
-        var inp=pop.querySelector('.lqi');
-        if(parseInt(inp.value)>1)inp.value=parseInt(inp.value)-1;
-      });
-      pop.querySelector('.lqp').addEventListener('click',function(e){
-        e.stopPropagation();
-        var inp=pop.querySelector('.lqi');
-        inp.value=parseInt(inp.value)+1;
-      });
-
-      // Add to cart
-      pop.querySelector('.li-pop-add').addEventListener('click',function(e){
-        e.stopPropagation();
-        var qty=parseInt(pop.querySelector('.lqi').value)||1;
-        addToCart({
-          id:pid,
-          description:productData.description||'Prodotto',
-          supplier_name:productData.supplier_name||'',
-          price:parseFloat(productData.price)||0,
-          selling_uom:productData.selling_uom||'',
-          qty:qty
-        });
-        // Visual feedback
-        pop.classList.remove('open');
-        btn.innerHTML=CHECK_SVG;
-        btn.classList.add('li-added');
-        setTimeout(function(){btn.innerHTML=CART_SVG;btn.classList.remove('li-added')},1500);
-      });
-
-      li.appendChild(btn);
-      li.appendChild(pop);
+      if(productData){
+        attachCartButton(li, productData);
+      }
     });
   }
 
@@ -569,7 +603,7 @@
     var isU=role==='user';
     d.innerHTML='<div class="msg-head"><div class="msg-icon '+(isU?'u':'b')+'">'+(isU?'Tu':'HS')+'</div><div class="msg-label '+(isU?'u':'b')+'">'+(isU?'Tu':'Hotel Supply Pro')+'</div></div><div class="msg-body">'+(isU?renderUser(text):marked.parse(text))+'</div>';
     if(!isU){
-      // Inject inline cart buttons on bullet list items (works with or without products array)
+      // Inject inline cart buttons on bullet list items
       injectInlineCartButtons(d, products);
     }
     el.appendChild(d);
