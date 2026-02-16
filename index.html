@@ -347,13 +347,24 @@
   (async function(){var r=await sb.auth.getSession();if(r.data.session){await loadCustomer(r.data.session.user.id);show('pg-dash');initChat()}else show('pg-login')})();
 
   // ===== PARSE PRODUCTS FROM RESPONSE =====
-  // The agent appends <!--PRODUCTS[...]---> at the end
   function extractProducts(text){
     var match=text.match(/<!--PRODUCTS(\[[\s\S]*?\])-->/);
-    if(!match) return {text:text,products:[]};
+    if(!match) return {text:text,products:[],isOrder:false};
     var clean=text.replace(/<!--PRODUCTS\[[\s\S]*?\]-->/,'').trim();
-    try{var products=JSON.parse(match[1]);return{text:clean,products:products}}
-    catch(e){return{text:clean,products:[]}}
+    var isOrder=isOrderConfirmation(clean);
+    if(isOrder) return {text:clean,products:[],isOrder:true};
+    try{var products=JSON.parse(match[1]);return{text:clean,products:products,isOrder:false}}
+    catch(e){return{text:clean,products:[],isOrder:false}}
+  }
+
+  // Detect if the message is an order confirmation/summary (not a product search)
+  function isOrderConfirmation(text){
+    var lower=text.toLowerCase();
+    var orderKeywords=['ordine confermato','ordine inviato','riepilogo ordine','dettaglio ordine',
+      'conferma ordine','ordine è stato','dati di consegna','dati di fatturazione',
+      'totale ordine','inoltro l\'ordine','inoltrare l\'ordine','procedo con l\'ordine',
+      'confermo l\'ordine','confermare l\'ordine'];
+    return orderKeywords.some(function(kw){return lower.indexOf(kw)!==-1});
   }
 
   // ===== RENDER FUNCTIONS =====
