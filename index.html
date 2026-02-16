@@ -521,11 +521,8 @@
     if(!isU&&products&&products.length){
       // Inject inline cart buttons on bullet list items
       injectInlineCartButtons(d, products);
-      // Also append product cards at the bottom
-      var cd=document.createElement('div');cd.innerHTML=renderProductCards(products);d.querySelector('.msg-body').appendChild(cd.firstElementChild);
     }
     el.appendChild(d);
-    if(!isU)bindProdBtns(d);
     document.getElementById('msg-area').scrollTop=document.getElementById('msg-area').scrollHeight;
   }
   function bindProdBtns(c){
