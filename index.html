@@ -406,7 +406,7 @@
   function renderUser(t){return esc(t).replace(/\n/g,'<br>')}
 
   /* ===== MATCH <li> TEXT TO PRODUCTS ===== */
-  function normalizeText(t){return t.replace(/<[^>]+>/g,'').replace(/[^a-zA-Z0-9àèéìòùç]/gi,' ').toLowerCase().replace(/\s+/g,' ').trim()}
+  function normalizeText(t){return t.replace(/<[^>]+>/g,'').toLowerCase().replace(/[''`]/g,'').replace(/\s+/g,' ').trim()}
 
   function matchLiToProduct(liText, products){
     if(!products||!products.length)return null;
@@ -416,22 +416,20 @@
     for(var i=0;i<products.length;i++){
       var p=products[i];
       var pDesc=normalizeText(p.description||p.name||'');
-      if(!pDesc)continue;
+      if(!pDesc||pDesc.length<3)continue;
 
-      // Strategy 1: product description appears in the li text
+      // Strategy 1: full product description found inside li text
       if(norm.indexOf(pDesc)!==-1){return p}
 
-      // Strategy 2: li text contains the product description (partial match)
-      // Split product desc into words and see how many appear in li
-      var pWords=pDesc.split(' ').filter(function(w){return w.length>2});
+      // Strategy 2: split product desc into words, check how many appear in li
+      var pWords=pDesc.split(/[\s,.\-–—()\/]+/).filter(function(w){return w.length>=2});
       if(!pWords.length)continue;
       var matched=0;
       for(var j=0;j<pWords.length;j++){
         if(norm.indexOf(pWords[j])!==-1)matched++;
       }
       var score=matched/pWords.length;
-      // Also check with the first significant words (brand-like matching)
-      if(score>bestScore&&score>=0.5){bestScore=score;bestMatch=p}
+      if(score>bestScore&&score>=0.4){bestScore=score;bestMatch=p}
     }
     return bestMatch;
   }
