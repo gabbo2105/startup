@@ -107,6 +107,36 @@
     .msg-body a{color:var(--accent);text-decoration:underline}
     .msg-body hr{border:none;border-top:1px solid var(--border);margin:1em 0}
 
+    /* ===== INLINE CART BUTTON on <li> ===== */
+    .msg-body li{position:relative}
+    .li-cart-btn{
+      display:inline-flex;align-items:center;justify-content:center;
+      width:24px;height:24px;border-radius:6px;border:1px solid var(--border);
+      background:var(--bg);color:var(--accent);cursor:pointer;
+      margin-left:.4rem;vertical-align:middle;
+      transition:all .2s ease;flex-shrink:0;
+      position:relative;top:-1px;
+    }
+    .li-cart-btn:hover{background:var(--accent);color:#fff;border-color:var(--accent);transform:scale(1.1)}
+    .li-cart-btn.li-added{background:var(--accent);color:#fff;border-color:var(--accent)}
+    .li-cart-btn svg{width:14px;height:14px;pointer-events:none}
+
+    /* Inline qty popover */
+    .li-qty-pop{
+      display:none;position:absolute;left:0;top:calc(100% + 4px);z-index:20;
+      background:var(--card-bg);border:1px solid var(--card-border);border-radius:10px;
+      padding:.5rem .6rem;box-shadow:var(--shadow-md);
+      align-items:center;gap:.35rem;white-space:nowrap;
+      animation:popIn .2s ease;
+    }
+    .li-qty-pop.open{display:inline-flex}
+    @keyframes popIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+    .li-qty-pop button{width:26px;height:26px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:.9rem;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:inherit}
+    .li-qty-pop button:hover{border-color:var(--accent);color:var(--accent)}
+    .li-qty-pop input{width:38px;text-align:center;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);font-size:.82rem;padding:.25rem;font-family:inherit}
+    .li-qty-pop .li-pop-add{padding:.3rem .65rem;background:var(--accent);color:#fff;border:none;border-radius:7px;font-size:.78rem;font-weight:600;cursor:pointer;width:auto;font-family:inherit;transition:background .15s}
+    .li-qty-pop .li-pop-add:hover{background:var(--accent-h)}
+
     /* Product cards */
     .product-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:.6rem;margin-top:.75rem}
     .product-card{background:var(--card-bg);border:1px solid var(--card-border);border-radius:12px;padding:.85rem 1rem;display:flex;align-items:center;justify-content:space-between;gap:.75rem;transition:border-color .15s}
@@ -290,6 +320,10 @@
 
   marked.setOptions({breaks:true,gfm:true});
 
+  /* ===== CART ICON SVG (reusable) ===== */
+  var CART_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>';
+  var CHECK_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+
   /* ===== NAV ===== */
   function show(id){['pg-login','pg-register','pg-dash'].forEach(function(p){document.getElementById(p).classList.add('hide')});document.getElementById(id).classList.remove('hide')}
   document.getElementById('go-reg').addEventListener('click',function(){show('pg-register')});
@@ -346,6 +380,13 @@
     document.getElementById('cart-mob-overlay').classList.remove('open');
   });
 
+  /* ===== CLOSE POPOVERS ON OUTSIDE CLICK ===== */
+  document.addEventListener('click',function(e){
+    if(!e.target.closest('.li-qty-pop')&&!e.target.closest('.li-cart-btn')){
+      document.querySelectorAll('.li-qty-pop.open').forEach(function(p){p.classList.remove('open')});
+    }
+  });
+
   /* ===== PARSE AGENT RESPONSE ===== */
   function parseResponse(text){
     var products=[],cartActions=[];
@@ -363,6 +404,103 @@
   /* ===== RENDER ===== */
   function esc(t){var d=document.createElement('div');d.textContent=t;return d.innerHTML}
   function renderUser(t){return esc(t).replace(/\n/g,'<br>')}
+
+  /* ===== MATCH <li> TEXT TO PRODUCTS ===== */
+  function normalizeText(t){return t.replace(/<[^>]+>/g,'').replace(/[^a-zA-Z0-9àèéìòùç]/gi,' ').toLowerCase().replace(/\s+/g,' ').trim()}
+
+  function matchLiToProduct(liText, products){
+    if(!products||!products.length)return null;
+    var norm=normalizeText(liText);
+    var bestMatch=null, bestScore=0;
+
+    for(var i=0;i<products.length;i++){
+      var p=products[i];
+      var pDesc=normalizeText(p.description||p.name||'');
+      if(!pDesc)continue;
+
+      // Strategy 1: product description appears in the li text
+      if(norm.indexOf(pDesc)!==-1){return p}
+
+      // Strategy 2: li text contains the product description (partial match)
+      // Split product desc into words and see how many appear in li
+      var pWords=pDesc.split(' ').filter(function(w){return w.length>2});
+      if(!pWords.length)continue;
+      var matched=0;
+      for(var j=0;j<pWords.length;j++){
+        if(norm.indexOf(pWords[j])!==-1)matched++;
+      }
+      var score=matched/pWords.length;
+      // Also check with the first significant words (brand-like matching)
+      if(score>bestScore&&score>=0.5){bestScore=score;bestMatch=p}
+    }
+    return bestMatch;
+  }
+
+  /* ===== INJECT INLINE CART BUTTONS INTO <li> ELEMENTS ===== */
+  function injectInlineCartButtons(msgEl, products){
+    if(!products||!products.length)return;
+    var lis=msgEl.querySelectorAll('.msg-body li');
+    lis.forEach(function(li){
+      var product=matchLiToProduct(li.textContent, products);
+      if(!product)return;
+
+      var pid=product.id||('p-'+Math.random().toString(36).substr(2,9));
+
+      // Create the cart icon button
+      var btn=document.createElement('button');
+      btn.className='li-cart-btn';
+      btn.innerHTML=CART_SVG;
+      btn.title='Aggiungi al carrello';
+
+      // Create the qty popover
+      var pop=document.createElement('div');
+      pop.className='li-qty-pop';
+      pop.innerHTML='<button class="lqm">−</button><input type="number" class="lqi" value="1" min="1" max="999"><button class="lqp">+</button><button class="li-pop-add">Aggiungi</button>';
+
+      // Toggle popover on cart icon click
+      btn.addEventListener('click',function(e){
+        e.stopPropagation();
+        // Close other popovers
+        document.querySelectorAll('.li-qty-pop.open').forEach(function(p){if(p!==pop)p.classList.remove('open')});
+        pop.classList.toggle('open');
+      });
+
+      // Qty controls
+      pop.querySelector('.lqm').addEventListener('click',function(e){
+        e.stopPropagation();
+        var inp=pop.querySelector('.lqi');
+        if(parseInt(inp.value)>1)inp.value=parseInt(inp.value)-1;
+      });
+      pop.querySelector('.lqp').addEventListener('click',function(e){
+        e.stopPropagation();
+        var inp=pop.querySelector('.lqi');
+        inp.value=parseInt(inp.value)+1;
+      });
+
+      // Add to cart
+      pop.querySelector('.li-pop-add').addEventListener('click',function(e){
+        e.stopPropagation();
+        var qty=parseInt(pop.querySelector('.lqi').value)||1;
+        addToCart({
+          id:pid,
+          description:product.description||product.name||'Prodotto',
+          supplier_name:product.supplier_name||'',
+          price:parseFloat(product.price)||0,
+          selling_uom:product.selling_uom||'',
+          qty:qty
+        });
+        // Visual feedback
+        pop.classList.remove('open');
+        btn.innerHTML=CHECK_SVG;
+        btn.classList.add('li-added');
+        setTimeout(function(){btn.innerHTML=CART_SVG;btn.classList.remove('li-added')},1500);
+      });
+
+      li.appendChild(btn);
+      li.appendChild(pop);
+    });
+  }
+
   function renderProductCards(products){
     if(!products||!products.length)return'';
     var h='<div class="product-grid">';
@@ -380,7 +518,12 @@
     var el=document.getElementById('msgs'),d=document.createElement('div');d.className='msg';
     var isU=role==='user';
     d.innerHTML='<div class="msg-head"><div class="msg-icon '+(isU?'u':'b')+'">'+(isU?'Tu':'HS')+'</div><div class="msg-label '+(isU?'u':'b')+'">'+(isU?'Tu':'Hotel Supply Pro')+'</div></div><div class="msg-body">'+(isU?renderUser(text):marked.parse(text))+'</div>';
-    if(!isU&&products&&products.length){var cd=document.createElement('div');cd.innerHTML=renderProductCards(products);d.querySelector('.msg-body').appendChild(cd.firstElementChild)}
+    if(!isU&&products&&products.length){
+      // Inject inline cart buttons on bullet list items
+      injectInlineCartButtons(d, products);
+      // Also append product cards at the bottom
+      var cd=document.createElement('div');cd.innerHTML=renderProductCards(products);d.querySelector('.msg-body').appendChild(cd.firstElementChild);
+    }
     el.appendChild(d);
     if(!isU)bindProdBtns(d);
     document.getElementById('msg-area').scrollTop=document.getElementById('msg-area').scrollHeight;
