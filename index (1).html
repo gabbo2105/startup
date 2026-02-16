@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hotel Supply Pro</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:system-ui,sans-serif;background:#0b1120;color:#f1f5f9;min-height:100vh}
+    .hide{display:none!important}
+    .wrap{max-width:500px;margin:0 auto;padding:2rem 1rem}
+    h1{text-align:center;color:#d4802a;margin-bottom:.3rem}
+    h2{text-align:center;color:#94a3b8;font-size:1rem;font-weight:400;margin-bottom:1.5rem}
+    .card{background:#111827;border:1px solid #1e293b;border-radius:12px;padding:1.5rem;margin-bottom:1rem}
+    .st{color:#d4802a;font-size:.85rem;font-weight:600;margin:1.2rem 0 .6rem;padding-bottom:.4rem;border-bottom:1px solid #1e293b}
+    .st:first-child{margin-top:0}
+    label{display:block;font-size:.8rem;color:#94a3b8;margin-bottom:.2rem}
+    input{width:100%;padding:.6rem .8rem;background:#0f1729;border:1px solid #1e293b;border-radius:8px;color:#f1f5f9;font-size:.9rem;margin-bottom:.6rem;outline:none}
+    input:focus{border-color:#d4802a}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:.6rem}
+    @media(max-width:500px){.row{grid-template-columns:1fr}}
+    .btn{width:100%;padding:.7rem;background:#d4802a;color:#fff;border:none;border-radius:8px;font-size:.95rem;font-weight:600;cursor:pointer;margin-top:.5rem}
+    .btn:hover{background:#e8943a}
+    .btn:disabled{opacity:.5;cursor:not-allowed}
+    .btn2{background:transparent;border:1px solid #1e293b;color:#94a3b8}
+    .btn2:hover{background:#1a2332}
+    .lnk{text-align:center;margin-top:1rem;color:#94a3b8;font-size:.85rem}
+    .lnk a{color:#d4802a;cursor:pointer;text-decoration:none}
+    .err{color:#ef4444;font-size:.82rem;min-height:1em;margin:.3rem 0}
+    .ok{color:#22c55e;font-size:.82rem;margin:.3rem 0}
+    /* debug */
+    #debug{position:fixed;bottom:0;left:0;right:0;max-height:150px;overflow-y:auto;background:#000;color:#0f0;font-family:monospace;font-size:11px;padding:6px;z-index:9999;border-top:2px solid #333}
+    #debug.hide{display:none!important}
+    /* dashboard */
+    .dh{background:#111827;border-bottom:1px solid #1e293b;padding:.6rem 1rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem}
+    .dh .logo{color:#d4802a;font-weight:700}
+    .dh .info{color:#94a3b8;font-size:.82rem}
+    .dh button{width:auto;padding:.35rem .7rem;font-size:.8rem;margin:0}
+    .da{display:flex;gap:.4rem;align-items:center;flex-wrap:wrap}
+    .cc{display:flex;flex-direction:column;height:calc(100vh - 52px)}
+    .cm{flex:1;overflow-y:auto;padding:1rem}
+    .m{margin-bottom:.6rem;max-width:80%}
+    .mu{margin-left:auto;background:rgba(212,128,42,.15);border:1px solid rgba(212,128,42,.25);padding:.6rem .9rem;border-radius:12px 12px 4px 12px}
+    .mb{background:#111827;border:1px solid #1e293b;padding:.6rem .9rem;border-radius:12px 12px 12px 4px}
+    .ci{display:flex;gap:.5rem;padding:.6rem;background:#111827;border-top:1px solid #1e293b}
+    .ci input{margin:0;flex:1}
+    .ci button{width:auto;padding:.6rem 1rem;margin:0}
+    .tp span{display:inline-block;width:7px;height:7px;background:#64748b;border-radius:50%;margin-right:4px;animation:b 1.4s infinite ease-in-out}
+    .tp span:nth-child(2){animation-delay:.15s}
+    .tp span:nth-child(3){animation-delay:.3s}
+    @keyframes b{0%,80%,100%{transform:scale(.6);opacity:.4}40%{transform:scale(1);opacity:1}}
+    .chips{display:flex;flex-wrap:wrap;gap:.3rem;margin-top:.5rem}
+    .chip{background:#1a2332;border:1px solid #1e293b;color:#94a3b8;padding:.35rem .7rem;border-radius:20px;font-size:.82rem;cursor:pointer}
+    .chip:hover{border-color:#d4802a;color:#d4802a}
+  </style>
+</head>
+<body>
+
+<!-- DEBUG LOG (rimovibile dopo il test) -->
+<div id="debug" class="hide"></div>
+
+<!-- LOGIN -->
+<div id="pg-login" class="hide">
+  <div class="wrap">
+    <h1>Hotel Supply Pro</h1>
+    <h2>Accedi al tuo account</h2>
+    <div class="card">
+      <label>Email</label>
+      <input type="email" id="l-email" placeholder="email@esempio.com">
+      <label>Password</label>
+      <input type="password" id="l-pass" placeholder="Password">
+      <div class="err" id="l-err"></div>
+      <button class="btn" id="l-btn">Accedi</button>
+    </div>
+    <div class="lnk">Non hai un account? <a id="go-reg">Registrati</a></div>
+  </div>
+</div>
+
+<!-- REGISTER -->
+<div id="pg-register" class="hide">
+  <div class="wrap">
+    <h1>Hotel Supply Pro</h1>
+    <h2>Crea il tuo account</h2>
+    <div class="card">
+      <div class="st">Accesso</div>
+      <label>Email *</label>
+      <input type="email" id="r-email" placeholder="email@esempio.com">
+      <div class="row">
+        <div><label>Password *</label><input type="password" id="r-pass" placeholder="Min 6 caratteri"></div>
+        <div><label>Conferma *</label><input type="password" id="r-pass2" placeholder="Ripeti"></div>
+      </div>
+      <div class="st">Azienda</div>
+      <label>Ragione sociale *</label>
+      <input type="text" id="r-company" placeholder="Hotel Roma S.r.l.">
+      <label>Partita IVA *</label>
+      <input type="text" id="r-vat" placeholder="IT01234567890">
+      <div class="st">Hotel</div>
+      <label>Nome hotel *</label>
+      <input type="text" id="r-hotel" placeholder="Grand Hotel Roma">
+      <label>Indirizzo</label>
+      <input type="text" id="r-address" placeholder="Via Roma 1, Roma">
+      <div class="st">Referente</div>
+      <label>Nome e cognome *</label>
+      <input type="text" id="r-contact" placeholder="Mario Rossi">
+      <div class="row">
+        <div><label>Ruolo</label><input type="text" id="r-role" placeholder="Resp. acquisti"></div>
+        <div><label>Telefono</label><input type="tel" id="r-phone" placeholder="+39 333 123456"></div>
+      </div>
+      <div class="err" id="r-err"></div>
+      <button class="btn" id="r-btn">Crea Account</button>
+    </div>
+    <div class="lnk">Hai già un account? <a id="go-login">Accedi</a></div>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="pg-dash" class="hide">
+  <div class="dh">
+    <div><span class="logo">Hotel Supply Pro</span> <span class="info" id="d-hotel"></span></div>
+    <div class="da">
+      <span class="info" id="d-name"></span>
+      <button class="btn btn2" id="btn-new">+ Nuova</button>
+      <button class="btn btn2" id="btn-out">Esci</button>
+    </div>
+  </div>
+  <div class="cc">
+    <div class="cm" id="msgs"></div>
+    <div class="ci">
+      <input type="text" id="cin" placeholder="Scrivi un messaggio...">
+      <button class="btn" id="btn-send">Invia</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  // ===== CONFIG =====
+  var SUPA_URL = 'https://wvlqjpmphfhkctupwvvd.supabase.co';
+  var SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind2bHFqcG1waGZoa2N0dXB3dnZkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA3MzMwNjIsImV4cCI6MjA4NjMwOTA2Mn0.Ov8iONgG-Ou4CuoMFBZ3S7WAlhHaEYrjiiE8u6z9MOg';
+  var N8N = 'https://gabbo.app.n8n.cloud/webhook/b5092d51-dd56-49c7-9188-820052fd2ba4/chat';
+
+  // ===== GLOBALS =====
+  var sb = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+  var customer = null;
+  var sessId = crypto.randomUUID();
+  var busy = false;
+
+  // ===== DEBUG LOG =====
+  var debugEl = document.getElementById('debug');
+  debugEl.classList.remove('hide'); // show debug panel
+  function log(msg) {
+    console.log('[HSP]', msg);
+    var line = document.createElement('div');
+    line.textContent = new Date().toLocaleTimeString() + ' ' + msg;
+    debugEl.appendChild(line);
+    debugEl.scrollTop = debugEl.scrollHeight;
+  }
+
+  // ===== NAV =====
+  function show(id) {
+    ['pg-login','pg-register','pg-dash'].forEach(function(p){
+      document.getElementById(p).classList.add('hide');
+    });
+    document.getElementById(id).classList.remove('hide');
+    log('show: ' + id);
+  }
+
+  // ===== WIRE UP NAV LINKS =====
+  document.getElementById('go-reg').addEventListener('click', function(){ show('pg-register'); });
+  document.getElementById('go-login').addEventListener('click', function(){ show('pg-login'); });
+
+  // ===== LOGIN =====
+  document.getElementById('l-btn').addEventListener('click', async function(){
+    var email = document.getElementById('l-email').value.trim();
+    var pass = document.getElementById('l-pass').value;
+    var err = document.getElementById('l-err');
+    var btn = document.getElementById('l-btn');
+    err.textContent = '';
+
+    if (!email || !pass) { err.textContent = 'Compila email e password.'; return; }
+
+    btn.disabled = true; btn.textContent = 'Caricamento...';
+    log('login: ' + email);
+
+    var result = await sb.auth.signInWithPassword({ email: email, password: pass });
+    btn.disabled = false; btn.textContent = 'Accedi';
+
+    if (result.error) {
+      log('login error: ' + result.error.message);
+      err.textContent = result.error.message === 'Invalid login credentials'
+        ? 'Email o password non corretti.' : result.error.message;
+      return;
+    }
+    log('login ok, user id: ' + result.data.user.id);
+    // onAuthStateChange will handle the rest
+  });
+
+  // ===== REGISTER =====
+  document.getElementById('r-btn').addEventListener('click', async function(){
+    var email = document.getElementById('r-email').value.trim();
+    var pass = document.getElementById('r-pass').value;
+    var pass2 = document.getElementById('r-pass2').value;
+    var err = document.getElementById('r-err');
+    var btn = document.getElementById('r-btn');
+    err.textContent = '';
+
+    if (pass.length < 6) { err.textContent = 'Password: minimo 6 caratteri.'; return; }
+    if (pass !== pass2) { err.textContent = 'Le password non coincidono.'; return; }
+
+    var meta = {
+      company_name:   document.getElementById('r-company').value.trim(),
+      vat_number:     document.getElementById('r-vat').value.trim(),
+      hotel_name:     document.getElementById('r-hotel').value.trim(),
+      hotel_address:  document.getElementById('r-address').value.trim(),
+      contact_person: document.getElementById('r-contact').value.trim(),
+      contact_role:   document.getElementById('r-role').value.trim(),
+      phone:          document.getElementById('r-phone').value.trim()
+    };
+
+    if (!meta.company_name || !meta.vat_number || !meta.hotel_name || !meta.contact_person) {
+      err.textContent = 'Compila tutti i campi con *.'; return;
+    }
+
+    btn.disabled = true; btn.textContent = 'Creazione...';
+    log('register: ' + email);
+    log('metadata: ' + JSON.stringify(meta));
+
+    var result = await sb.auth.signUp({
+      email: email,
+      password: pass,
+      options: {
+        data: meta
+      }
+    });
+
+    btn.disabled = false; btn.textContent = 'Crea Account';
+
+    if (result.error) {
+      log('register error: ' + result.error.message);
+      err.textContent = result.error.message;
+      return;
+    }
+
+    log('signUp response user: ' + (result.data.user ? result.data.user.id : 'null'));
+    log('signUp response session: ' + (result.data.session ? 'YES' : 'null'));
+
+    // Case 1: email confirmation required (session is null)
+    if (result.data.user && !result.data.session) {
+      log('email confirmation required - user created but no session');
+      err.innerHTML = '<span class="ok">Account creato! Controlla la tua email per confermare, poi torna qui e accedi.</span>';
+      return;
+    }
+
+    // Case 2: auto-confirmed (session present) - onAuthStateChange handles redirect
+    if (result.data.session) {
+      log('auto-confirmed, session present, waiting for onAuthStateChange...');
+    }
+  });
+
+  // ===== LOAD CUSTOMER =====
+  async function loadCustomer(userId) {
+    log('loadCustomer for: ' + userId);
+    var result = await sb.from('customers').select('*').eq('auth_user_id', userId).single();
+    if (result.error) {
+      log('loadCustomer error: ' + JSON.stringify(result.error));
+      customer = null;
+    } else {
+      customer = result.data;
+      log('loadCustomer ok: ' + customer.company_name + ' / ' + customer.hotel_name);
+    }
+    document.getElementById('d-hotel').textContent = customer ? (customer.hotel_name || '') : '';
+    document.getElementById('d-name').textContent = customer ? (customer.contact_person || '') : '';
+  }
+
+  // ===== AUTH STATE CHANGE =====
+  sb.auth.onAuthStateChange(async function(event, session) {
+    log('authStateChange: ' + event + ' session=' + (session ? 'yes' : 'no'));
+    if (event === 'SIGNED_IN' && session) {
+      await loadCustomer(session.user.id);
+      show('pg-dash');
+      initChat();
+    }
+    if (event === 'SIGNED_OUT') {
+      customer = null;
+      show('pg-login');
+    }
+  });
+
+  // ===== INIT: check existing session =====
+  (async function(){
+    log('init: checking session...');
+    var result = await sb.auth.getSession();
+    if (result.data.session) {
+      log('init: existing session found');
+      await loadCustomer(result.data.session.user.id);
+      show('pg-dash');
+      initChat();
+    } else {
+      log('init: no session');
+      show('pg-login');
+    }
+  })();
+
+  // ===== CHAT =====
+  function addMsg(cls, text) {
+    var el = document.getElementById('msgs');
+    var d = document.createElement('div');
+    d.className = 'm ' + cls;
+    d.innerHTML = text.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>');
+    el.appendChild(d);
+    el.scrollTop = el.scrollHeight;
+  }
+
+  function initChat() {
+    var el = document.getElementById('msgs');
+    el.innerHTML = '';
+    sessId = crypto.randomUUID();
+    var name = customer ? (customer.contact_person||'').split(' ')[0] : '';
+    addMsg('mb', (name?'Ciao '+name+'!':'Ciao!')+'\nSono il tuo assistente per gli acquisti. Cosa posso fare per te?');
+    var chips = document.createElement('div');
+    chips.className = 'chips'; chips.id = 'chps';
+    ['Che prosecco avete?','Prodotti per la colazione','Detersivi cucina','Confronta Coca Cola'].forEach(function(t){
+      var c = document.createElement('span'); c.className='chip'; c.textContent=t;
+      c.addEventListener('click', function(){ chips.remove(); doSend(t); });
+      chips.appendChild(c);
+    });
+    el.appendChild(chips);
+  }
+
+  async function doSend(text) {
+    if (busy) return;
+    if (!text) {
+      text = document.getElementById('cin').value.trim();
+      document.getElementById('cin').value = '';
+    }
+    if (!text) return;
+    var c = document.getElementById('chps'); if(c) c.remove();
+
+    addMsg('mu', text);
+    busy = true;
+
+    var tp = document.createElement('div');
+    tp.className='m mb tp'; tp.id='tp';
+    tp.innerHTML='<span></span><span></span><span></span>';
+    document.getElementById('msgs').appendChild(tp);
+
+    try {
+      var res = await fetch(N8N, {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({
+          chatInput: text,
+          sessionId: sessId,
+          customerId: customer ? customer.id : '',
+          customerName: customer ? (customer.contact_person||'') : '',
+          hotelName: customer ? (customer.hotel_name||'') : '',
+          companyName: customer ? (customer.company_name||'') : ''
+        })
+      });
+      var t = document.getElementById('tp'); if(t) t.remove();
+      var data = await res.json();
+      var reply = typeof data==='string' ? data : (data.output||data.text||data.response||data.message||JSON.stringify(data));
+      addMsg('mb', reply);
+    } catch(e) {
+      var t = document.getElementById('tp'); if(t) t.remove();
+      addMsg('mb', 'Errore di comunicazione. Riprova.');
+      log('chat error: '+e.message);
+    }
+    busy = false;
+  }
+
+  document.getElementById('btn-send').addEventListener('click', function(){ doSend(); });
+  document.getElementById('cin').addEventListener('keydown', function(e){ if(e.key==='Enter') doSend(); });
+  document.getElementById('btn-new').addEventListener('click', function(){ initChat(); });
+  document.getElementById('btn-out').addEventListener('click', function(){
+    log('logout');
+    sb.auth.signOut();
+  });
+
+})();
+</script>
+</body>
+</html>
