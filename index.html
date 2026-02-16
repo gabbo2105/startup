@@ -4,91 +4,220 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Hotel Supply Pro</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Söhne:wght@400;500;600&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:system-ui,sans-serif;background:#0b1120;color:#f1f5f9;min-height:100vh}
-    .hide{display:none!important}
-    .wrap{max-width:500px;margin:0 auto;padding:2rem 1rem}
-    h1{text-align:center;color:#d4802a;margin-bottom:.3rem}
-    h2{text-align:center;color:#94a3b8;font-size:1rem;font-weight:400;margin-bottom:1.5rem}
-    .card{background:#111827;border:1px solid #1e293b;border-radius:12px;padding:1.5rem;margin-bottom:1rem}
-    .st{color:#d4802a;font-size:.85rem;font-weight:600;margin:1.2rem 0 .6rem;padding-bottom:.4rem;border-bottom:1px solid #1e293b}
-    .st:first-child{margin-top:0}
-    label{display:block;font-size:.8rem;color:#94a3b8;margin-bottom:.2rem}
-    input{width:100%;padding:.6rem .8rem;background:#0f1729;border:1px solid #1e293b;border-radius:8px;color:#f1f5f9;font-size:.9rem;margin-bottom:.6rem;outline:none}
-    input:focus{border-color:#d4802a}
-    .row{display:grid;grid-template-columns:1fr 1fr;gap:.6rem}
-    @media(max-width:500px){.row{grid-template-columns:1fr}}
-    .btn{width:100%;padding:.7rem;background:#d4802a;color:#fff;border:none;border-radius:8px;font-size:.95rem;font-weight:600;cursor:pointer;margin-top:.5rem}
-    .btn:hover{background:#e8943a}
-    .btn:disabled{opacity:.5;cursor:not-allowed}
-    .btn2{background:transparent;border:1px solid #1e293b;color:#94a3b8}
-    .btn2:hover{background:#1a2332}
-    .lnk{text-align:center;margin-top:1rem;color:#94a3b8;font-size:.85rem}
-    .lnk a{color:#d4802a;cursor:pointer;text-decoration:none}
-    .err{color:#ef4444;font-size:.82rem;min-height:1em;margin:.3rem 0}
-    .ok{color:#22c55e;font-size:.82rem;margin:.3rem 0}
-    /* debug */
-    #debug{position:fixed;bottom:0;left:0;right:0;max-height:150px;overflow-y:auto;background:#000;color:#0f0;font-family:monospace;font-size:11px;padding:6px;z-index:9999;border-top:2px solid #333}
-    #debug.hide{display:none!important}
-    /* dashboard */
-    .dh{background:#111827;border-bottom:1px solid #1e293b;padding:.6rem 1rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem}
-    .dh .logo{color:#d4802a;font-weight:700}
-    .dh .info{color:#94a3b8;font-size:.82rem}
-    .dh button{width:auto;padding:.35rem .7rem;font-size:.8rem;margin:0}
-    .da{display:flex;gap:.4rem;align-items:center;flex-wrap:wrap}
-    .cc{display:flex;flex-direction:column;height:calc(100vh - 52px)}
-    .cm{flex:1;overflow-y:auto;padding:1rem}
-    .m{margin-bottom:.6rem;max-width:80%}
-    .mu{margin-left:auto;background:rgba(212,128,42,.15);border:1px solid rgba(212,128,42,.25);padding:.6rem .9rem;border-radius:12px 12px 4px 12px}
-    .mb{background:#111827;border:1px solid #1e293b;padding:.6rem .9rem;border-radius:12px 12px 12px 4px}
-    .ci{display:flex;gap:.5rem;padding:.6rem;background:#111827;border-top:1px solid #1e293b}
-    .ci input{margin:0;flex:1}
-    .ci button{width:auto;padding:.6rem 1rem;margin:0}
-    .tp span{display:inline-block;width:7px;height:7px;background:#64748b;border-radius:50%;margin-right:4px;animation:b 1.4s infinite ease-in-out}
-    .tp span:nth-child(2){animation-delay:.15s}
-    .tp span:nth-child(3){animation-delay:.3s}
-    @keyframes b{0%,80%,100%{transform:scale(.6);opacity:.4}40%{transform:scale(1);opacity:1}}
-    .chips{display:flex;flex-wrap:wrap;gap:.3rem;margin-top:.5rem}
-    .chip{background:#1a2332;border:1px solid #1e293b;color:#94a3b8;padding:.35rem .7rem;border-radius:20px;font-size:.82rem;cursor:pointer}
-    .chip:hover{border-color:#d4802a;color:#d4802a}
+    :root {
+      --sidebar-w: 260px;
+      --bg-main: #212121;
+      --bg-sidebar: #171717;
+      --bg-input: #2f2f2f;
+      --bg-hover: #2f2f2f;
+      --bg-msg-assistant: #2f2f2f;
+      --text-primary: #ececec;
+      --text-secondary: #b4b4b4;
+      --text-muted: #8e8e8e;
+      --border: #383838;
+      --accent: #d4802a;
+      --accent-hover: #e89540;
+      --accent-subtle: rgba(212,128,42,0.12);
+      --radius: 12px;
+      --radius-lg: 24px;
+      --radius-full: 9999px;
+      --font: 'Söhne', system-ui, -apple-system, sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body { font-family: var(--font); background: var(--bg-main); color: var(--text-primary); -webkit-font-smoothing: antialiased; }
+    .hide { display: none !important; }
+    a { color: var(--accent); text-decoration: none; cursor: pointer; }
+    a:hover { color: var(--accent-hover); }
+    ::selection { background: var(--accent-subtle); }
+
+    /* ===== AUTH PAGES ===== */
+    .auth-page { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 1.5rem; }
+    .auth-box { width: 100%; max-width: 420px; }
+    .auth-box--wide { max-width: 520px; }
+    .auth-logo { text-align: center; margin-bottom: 2rem; }
+    .auth-logo h1 { font-size: 1.5rem; font-weight: 600; letter-spacing: -0.02em; }
+    .auth-logo h1 span { color: var(--accent); }
+    .auth-logo p { color: var(--text-muted); font-size: 0.9rem; margin-top: 0.3rem; }
+    .auth-card { background: var(--bg-sidebar); border: 1px solid var(--border); border-radius: 16px; padding: 2rem; }
+    .st { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--accent); margin: 1.5rem 0 0.6rem; }
+    .st:first-child { margin-top: 0; }
+    label { display: block; font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 0.25rem; font-weight: 500; }
+    input[type="email"], input[type="password"], input[type="text"], input[type="tel"] {
+      width: 100%; padding: 0.65rem 0.85rem; background: var(--bg-input); border: 1px solid var(--border);
+      border-radius: 10px; color: var(--text-primary); font-family: var(--font); font-size: 0.9rem;
+      margin-bottom: 0.6rem; outline: none; transition: border-color 0.15s;
+    }
+    input:focus { border-color: var(--accent); }
+    input::placeholder { color: var(--text-muted); }
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+    @media(max-width:500px) { .row2 { grid-template-columns: 1fr; } }
+
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 100%; padding: 0.7rem; font-family: var(--font); font-size: 0.92rem; font-weight: 600;
+      border: none; border-radius: 10px; cursor: pointer; transition: all 0.15s;
+    }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover:not(:disabled) { background: var(--accent-hover); }
+    .btn-ghost { background: transparent; color: var(--text-secondary); border: 1px solid var(--border); padding: 0.5rem 0.8rem; width: auto; font-size: 0.82rem; font-weight: 500; }
+    .btn-ghost:hover:not(:disabled) { background: var(--bg-hover); color: var(--text-primary); }
+
+    .err { color: #f87171; font-size: 0.82rem; min-height: 1em; margin: 0.3rem 0; }
+    .ok { color: #4ade80; }
+    .lnk { text-align: center; margin-top: 1.25rem; font-size: 0.85rem; color: var(--text-muted); }
+
+    /* ===== DASHBOARD LAYOUT ===== */
+    .dash { display: flex; height: 100vh; }
+
+    /* Sidebar */
+    .sidebar {
+      width: var(--sidebar-w); background: var(--bg-sidebar); display: flex; flex-direction: column;
+      border-right: 1px solid var(--border); flex-shrink: 0; transition: margin-left 0.25s;
+    }
+    .sidebar-header { padding: 0.75rem; border-bottom: 1px solid var(--border); }
+    .sidebar-header button { width: 100%; }
+    .sidebar-brand { padding: 1rem 0.75rem 0.5rem; font-size: 0.8rem; font-weight: 600; color: var(--text-muted); letter-spacing: 0.04em; text-transform: uppercase; }
+    .sidebar-chats { flex: 1; overflow-y: auto; padding: 0.25rem 0.5rem; }
+    .sidebar-item {
+      padding: 0.55rem 0.75rem; border-radius: 8px; font-size: 0.85rem; color: var(--text-secondary);
+      cursor: pointer; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .sidebar-item:hover { background: var(--bg-hover); color: var(--text-primary); }
+    .sidebar-item.active { background: var(--bg-hover); color: var(--text-primary); }
+    .sidebar-footer { padding: 0.75rem; border-top: 1px solid var(--border); }
+    .sidebar-user { display: flex; align-items: center; gap: 0.6rem; padding: 0.5rem; border-radius: 8px; cursor: pointer; }
+    .sidebar-user:hover { background: var(--bg-hover); }
+    .sidebar-avatar {
+      width: 32px; height: 32px; border-radius: 50%; background: var(--accent);
+      display: flex; align-items: center; justify-content: center; font-size: 0.8rem;
+      font-weight: 600; color: #fff; flex-shrink: 0;
+    }
+    .sidebar-user-info { min-width: 0; }
+    .sidebar-user-name { font-size: 0.85rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sidebar-user-hotel { font-size: 0.75rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    /* Main area */
+    .main { flex: 1; display: flex; flex-direction: column; min-width: 0; position: relative; }
+    .main-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0.6rem 1rem; border-bottom: 1px solid var(--border); background: var(--bg-main);
+      height: 48px; flex-shrink: 0;
+    }
+    .main-header .model-name { font-size: 0.9rem; font-weight: 600; }
+    .hamburger { display: none; background: none; border: none; color: var(--text-secondary); cursor: pointer; padding: 4px; }
+    .hamburger svg { width: 22px; height: 22px; }
+
+    /* Messages area */
+    .messages-area { flex: 1; overflow-y: auto; }
+    .messages-inner { max-width: 768px; margin: 0 auto; padding: 1.5rem 1rem 6rem; }
+    .msg { padding: 1rem 0; line-height: 1.65; font-size: 0.95rem; }
+    .msg + .msg { border-top: none; }
+    .msg-role { font-size: 0.8rem; font-weight: 600; margin-bottom: 0.4rem; display: flex; align-items: center; gap: 0.5rem; }
+    .msg-role-user { color: var(--text-secondary); }
+    .msg-role-bot { color: var(--accent); }
+    .msg-role-icon {
+      width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      font-size: 0.7rem; font-weight: 700; flex-shrink: 0;
+    }
+    .msg-role-icon.user-icon { background: #565869; color: #fff; }
+    .msg-role-icon.bot-icon { background: var(--accent); color: #fff; }
+    .msg-body { color: var(--text-primary); }
+    .msg-body strong { color: var(--accent); font-weight: 600; }
+
+    /* Typing */
+    .typing-dots span { display: inline-block; width: 8px; height: 8px; background: var(--text-muted); border-radius: 50%; margin-right: 5px; animation: tbounce 1.4s infinite ease-in-out; }
+    .typing-dots span:nth-child(2) { animation-delay: .15s; }
+    .typing-dots span:nth-child(3) { animation-delay: .3s; }
+    @keyframes tbounce { 0%,80%,100%{transform:scale(0.5);opacity:0.35} 40%{transform:scale(1);opacity:1} }
+
+    /* Chips */
+    .chips { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.75rem; }
+    .chip {
+      padding: 0.45rem 0.9rem; border: 1px solid var(--border); border-radius: var(--radius-full);
+      font-size: 0.82rem; color: var(--text-secondary); cursor: pointer; transition: all 0.15s;
+      background: transparent;
+    }
+    .chip:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-subtle); }
+
+    /* Input bar */
+    .input-bar {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      padding: 0.75rem 1rem 1.25rem; background: linear-gradient(transparent, var(--bg-main) 30%);
+    }
+    .input-bar-inner {
+      max-width: 768px; margin: 0 auto; display: flex; align-items: center; gap: 0.5rem;
+      background: var(--bg-input); border: 1px solid var(--border); border-radius: var(--radius-lg);
+      padding: 0.4rem 0.5rem 0.4rem 1rem; transition: border-color 0.15s;
+    }
+    .input-bar-inner:focus-within { border-color: var(--accent); }
+    .input-bar-inner input {
+      flex: 1; background: transparent; border: none; outline: none; color: var(--text-primary);
+      font-family: var(--font); font-size: 0.92rem; padding: 0.5rem 0; margin: 0;
+    }
+    .input-bar-inner input::placeholder { color: var(--text-muted); }
+    .send-btn {
+      width: 36px; height: 36px; border-radius: 50%; background: var(--accent); border: none;
+      display: flex; align-items: center; justify-content: center; cursor: pointer;
+      transition: background 0.15s; flex-shrink: 0;
+    }
+    .send-btn:hover { background: var(--accent-hover); }
+    .send-btn:disabled { background: var(--bg-hover); cursor: not-allowed; }
+    .send-btn svg { width: 18px; height: 18px; color: #fff; }
+    .input-disclaimer { text-align: center; font-size: 0.7rem; color: var(--text-muted); margin-top: 0.5rem; }
+
+    /* Mobile sidebar */
+    @media(max-width:768px) {
+      .sidebar { position: fixed; left: 0; top: 0; bottom: 0; z-index: 100; margin-left: calc(-1 * var(--sidebar-w)); }
+      .sidebar.open { margin-left: 0; }
+      .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 99; }
+      .sidebar-overlay.open { display: block; }
+      .hamburger { display: flex; }
+    }
   </style>
 </head>
 <body>
 
-<!-- DEBUG LOG (rimovibile dopo il test) -->
-<div id="debug" class="hide"></div>
-
-<!-- LOGIN -->
-<div id="pg-login" class="hide">
-  <div class="wrap">
-    <h1>Hotel Supply Pro</h1>
-    <h2>Accedi al tuo account</h2>
-    <div class="card">
+<!-- ===== LOGIN ===== -->
+<div id="pg-login" class="auth-page hide">
+  <div class="auth-box">
+    <div class="auth-logo">
+      <h1>Hotel Supply <span>Pro</span></h1>
+      <p>Accedi al tuo account</p>
+    </div>
+    <div class="auth-card">
       <label>Email</label>
       <input type="email" id="l-email" placeholder="email@esempio.com">
       <label>Password</label>
-      <input type="password" id="l-pass" placeholder="Password">
+      <input type="password" id="l-pass" placeholder="La tua password">
       <div class="err" id="l-err"></div>
-      <button class="btn" id="l-btn">Accedi</button>
+      <button class="btn btn-primary" id="l-btn" style="margin-top:0.5rem">Accedi</button>
     </div>
     <div class="lnk">Non hai un account? <a id="go-reg">Registrati</a></div>
   </div>
 </div>
 
-<!-- REGISTER -->
-<div id="pg-register" class="hide">
-  <div class="wrap">
-    <h1>Hotel Supply Pro</h1>
-    <h2>Crea il tuo account</h2>
-    <div class="card">
+<!-- ===== REGISTER ===== -->
+<div id="pg-register" class="auth-page hide">
+  <div class="auth-box auth-box--wide">
+    <div class="auth-logo">
+      <h1>Hotel Supply <span>Pro</span></h1>
+      <p>Crea il tuo account gratuito</p>
+    </div>
+    <div class="auth-card">
       <div class="st">Accesso</div>
       <label>Email *</label>
       <input type="email" id="r-email" placeholder="email@esempio.com">
-      <div class="row">
+      <div class="row2">
         <div><label>Password *</label><input type="password" id="r-pass" placeholder="Min 6 caratteri"></div>
-        <div><label>Conferma *</label><input type="password" id="r-pass2" placeholder="Ripeti"></div>
+        <div><label>Conferma *</label><input type="password" id="r-pass2" placeholder="Ripeti password"></div>
       </div>
       <div class="st">Azienda</div>
       <label>Ragione sociale *</label>
@@ -103,72 +232,103 @@
       <div class="st">Referente</div>
       <label>Nome e cognome *</label>
       <input type="text" id="r-contact" placeholder="Mario Rossi">
-      <div class="row">
+      <div class="row2">
         <div><label>Ruolo</label><input type="text" id="r-role" placeholder="Resp. acquisti"></div>
         <div><label>Telefono</label><input type="tel" id="r-phone" placeholder="+39 333 123456"></div>
       </div>
       <div class="err" id="r-err"></div>
-      <button class="btn" id="r-btn">Crea Account</button>
+      <button class="btn btn-primary" id="r-btn" style="margin-top:0.5rem">Crea Account</button>
     </div>
     <div class="lnk">Hai già un account? <a id="go-login">Accedi</a></div>
   </div>
 </div>
 
-<!-- DASHBOARD -->
+<!-- ===== DASHBOARD ===== -->
 <div id="pg-dash" class="hide">
-  <div class="dh">
-    <div><span class="logo">Hotel Supply Pro</span> <span class="info" id="d-hotel"></span></div>
-    <div class="da">
-      <span class="info" id="d-name"></span>
-      <button class="btn btn2" id="btn-new">+ Nuova</button>
-      <button class="btn btn2" id="btn-out">Esci</button>
-    </div>
-  </div>
-  <div class="cc">
-    <div class="cm" id="msgs"></div>
-    <div class="ci">
-      <input type="text" id="cin" placeholder="Scrivi un messaggio...">
-      <button class="btn" id="btn-send">Invia</button>
+  <div class="dash">
+    <!-- Sidebar overlay for mobile -->
+    <div class="sidebar-overlay" id="sb-overlay"></div>
+
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <button class="btn btn-ghost" id="btn-new" style="width:100%">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:6px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Nuova chat
+        </button>
+      </div>
+      <div class="sidebar-brand">Le tue chat</div>
+      <div class="sidebar-chats" id="sb-chats">
+        <!-- populated dynamically -->
+      </div>
+      <div class="sidebar-footer">
+        <div class="sidebar-user" id="btn-logout" title="Clicca per uscire">
+          <div class="sidebar-avatar" id="sb-avatar">M</div>
+          <div class="sidebar-user-info">
+            <div class="sidebar-user-name" id="sb-name">Mario Rossi</div>
+            <div class="sidebar-user-hotel" id="sb-hotel">Hotel Fumagalli</div>
+          </div>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2" style="margin-left:auto;flex-shrink:0"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <div class="main">
+      <div class="main-header">
+        <button class="hamburger" id="btn-menu">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <div class="model-name">Hotel Supply <span style="color:var(--accent)">Pro</span></div>
+        <div style="width:22px"></div>
+      </div>
+
+      <div class="messages-area" id="msg-area">
+        <div class="messages-inner" id="msgs"></div>
+      </div>
+
+      <div class="input-bar">
+        <div class="input-bar-inner">
+          <input type="text" id="cin" placeholder="Scrivi un messaggio...">
+          <button class="send-btn" id="btn-send" title="Invia">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </button>
+        </div>
+        <div class="input-disclaimer">Hotel Supply Pro può commettere errori. Verifica le informazioni importanti.</div>
+      </div>
     </div>
   </div>
 </div>
 
 <script>
 (function(){
-  // ===== CONFIG =====
   var SUPA_URL = 'https://wvlqjpmphfhkctupwvvd.supabase.co';
   var SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind2bHFqcG1waGZoa2N0dXB3dnZkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA3MzMwNjIsImV4cCI6MjA4NjMwOTA2Mn0.Ov8iONgG-Ou4CuoMFBZ3S7WAlhHaEYrjiiE8u6z9MOg';
   var N8N = 'https://gabbo.app.n8n.cloud/webhook/b5092d51-dd56-49c7-9188-820052fd2ba4/chat';
 
-  // ===== GLOBALS =====
   var sb = window.supabase.createClient(SUPA_URL, SUPA_KEY);
   var customer = null;
   var sessId = crypto.randomUUID();
   var busy = false;
-
-  // ===== DEBUG LOG =====
-  var debugEl = document.getElementById('debug');
-  debugEl.classList.remove('hide'); // show debug panel
-  function log(msg) {
-    console.log('[HSP]', msg);
-    var line = document.createElement('div');
-    line.textContent = new Date().toLocaleTimeString() + ' ' + msg;
-    debugEl.appendChild(line);
-    debugEl.scrollTop = debugEl.scrollHeight;
-  }
+  var chatHistory = []; // [{title, id}]
 
   // ===== NAV =====
   function show(id) {
-    ['pg-login','pg-register','pg-dash'].forEach(function(p){
-      document.getElementById(p).classList.add('hide');
-    });
+    ['pg-login','pg-register','pg-dash'].forEach(function(p){ document.getElementById(p).classList.add('hide'); });
     document.getElementById(id).classList.remove('hide');
-    log('show: ' + id);
   }
-
-  // ===== WIRE UP NAV LINKS =====
   document.getElementById('go-reg').addEventListener('click', function(){ show('pg-register'); });
   document.getElementById('go-login').addEventListener('click', function(){ show('pg-login'); });
+
+  // ===== MOBILE SIDEBAR =====
+  document.getElementById('btn-menu').addEventListener('click', function(){
+    document.getElementById('sidebar').classList.toggle('open');
+    document.getElementById('sb-overlay').classList.toggle('open');
+  });
+  document.getElementById('sb-overlay').addEventListener('click', function(){
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('sb-overlay').classList.remove('open');
+  });
 
   // ===== LOGIN =====
   document.getElementById('l-btn').addEventListener('click', async function(){
@@ -177,24 +337,16 @@
     var err = document.getElementById('l-err');
     var btn = document.getElementById('l-btn');
     err.textContent = '';
-
     if (!email || !pass) { err.textContent = 'Compila email e password.'; return; }
-
     btn.disabled = true; btn.textContent = 'Caricamento...';
-    log('login: ' + email);
-
     var result = await sb.auth.signInWithPassword({ email: email, password: pass });
     btn.disabled = false; btn.textContent = 'Accedi';
-
     if (result.error) {
-      log('login error: ' + result.error.message);
-      err.textContent = result.error.message === 'Invalid login credentials'
-        ? 'Email o password non corretti.' : result.error.message;
-      return;
+      err.textContent = result.error.message === 'Invalid login credentials' ? 'Email o password non corretti.' : result.error.message;
     }
-    log('login ok, user id: ' + result.data.user.id);
-    // onAuthStateChange will handle the rest
   });
+  // Enter key on login
+  document.getElementById('l-pass').addEventListener('keydown', function(e){ if(e.key==='Enter') document.getElementById('l-btn').click(); });
 
   // ===== REGISTER =====
   document.getElementById('r-btn').addEventListener('click', async function(){
@@ -204,78 +356,46 @@
     var err = document.getElementById('r-err');
     var btn = document.getElementById('r-btn');
     err.textContent = '';
-
     if (pass.length < 6) { err.textContent = 'Password: minimo 6 caratteri.'; return; }
     if (pass !== pass2) { err.textContent = 'Le password non coincidono.'; return; }
-
     var meta = {
-      company_name:   document.getElementById('r-company').value.trim(),
-      vat_number:     document.getElementById('r-vat').value.trim(),
-      hotel_name:     document.getElementById('r-hotel').value.trim(),
-      hotel_address:  document.getElementById('r-address').value.trim(),
+      company_name: document.getElementById('r-company').value.trim(),
+      vat_number: document.getElementById('r-vat').value.trim(),
+      hotel_name: document.getElementById('r-hotel').value.trim(),
+      hotel_address: document.getElementById('r-address').value.trim(),
       contact_person: document.getElementById('r-contact').value.trim(),
-      contact_role:   document.getElementById('r-role').value.trim(),
-      phone:          document.getElementById('r-phone').value.trim()
+      contact_role: document.getElementById('r-role').value.trim(),
+      phone: document.getElementById('r-phone').value.trim()
     };
-
     if (!meta.company_name || !meta.vat_number || !meta.hotel_name || !meta.contact_person) {
       err.textContent = 'Compila tutti i campi con *.'; return;
     }
-
     btn.disabled = true; btn.textContent = 'Creazione...';
-    log('register: ' + email);
-    log('metadata: ' + JSON.stringify(meta));
-
-    var result = await sb.auth.signUp({
-      email: email,
-      password: pass,
-      options: {
-        data: meta
-      }
-    });
-
+    var result = await sb.auth.signUp({ email: email, password: pass, options: { data: meta } });
     btn.disabled = false; btn.textContent = 'Crea Account';
-
-    if (result.error) {
-      log('register error: ' + result.error.message);
-      err.textContent = result.error.message;
-      return;
-    }
-
-    log('signUp response user: ' + (result.data.user ? result.data.user.id : 'null'));
-    log('signUp response session: ' + (result.data.session ? 'YES' : 'null'));
-
-    // Case 1: email confirmation required (session is null)
+    if (result.error) { err.textContent = result.error.message; return; }
     if (result.data.user && !result.data.session) {
-      log('email confirmation required - user created but no session');
-      err.innerHTML = '<span class="ok">Account creato! Controlla la tua email per confermare, poi torna qui e accedi.</span>';
-      return;
-    }
-
-    // Case 2: auto-confirmed (session present) - onAuthStateChange handles redirect
-    if (result.data.session) {
-      log('auto-confirmed, session present, waiting for onAuthStateChange...');
+      err.innerHTML = '<span class="ok">Account creato! Controlla la tua email per confermare, poi accedi.</span>';
     }
   });
 
+  // ===== LOGOUT =====
+  document.getElementById('btn-logout').addEventListener('click', function(){ sb.auth.signOut(); });
+
   // ===== LOAD CUSTOMER =====
   async function loadCustomer(userId) {
-    log('loadCustomer for: ' + userId);
     var result = await sb.from('customers').select('*').eq('auth_user_id', userId).single();
-    if (result.error) {
-      log('loadCustomer error: ' + JSON.stringify(result.error));
-      customer = null;
-    } else {
-      customer = result.data;
-      log('loadCustomer ok: ' + customer.company_name + ' / ' + customer.hotel_name);
+    customer = result.data || null;
+    if (customer) {
+      var initials = (customer.contact_person || 'U').split(' ').map(function(w){ return w[0]; }).join('').toUpperCase().slice(0,2);
+      document.getElementById('sb-avatar').textContent = initials;
+      document.getElementById('sb-name').textContent = customer.contact_person || '';
+      document.getElementById('sb-hotel').textContent = customer.hotel_name || '';
     }
-    document.getElementById('d-hotel').textContent = customer ? (customer.hotel_name || '') : '';
-    document.getElementById('d-name').textContent = customer ? (customer.contact_person || '') : '';
   }
 
-  // ===== AUTH STATE CHANGE =====
+  // ===== AUTH STATE =====
   sb.auth.onAuthStateChange(async function(event, session) {
-    log('authStateChange: ' + event + ' session=' + (session ? 'yes' : 'no'));
     if (event === 'SIGNED_IN' && session) {
       await loadCustomer(session.user.id);
       show('pg-dash');
@@ -287,47 +407,95 @@
     }
   });
 
-  // ===== INIT: check existing session =====
+  // ===== INIT =====
   (async function(){
-    log('init: checking session...');
     var result = await sb.auth.getSession();
     if (result.data.session) {
-      log('init: existing session found');
       await loadCustomer(result.data.session.user.id);
       show('pg-dash');
       initChat();
     } else {
-      log('init: no session');
       show('pg-login');
     }
   })();
 
   // ===== CHAT =====
-  function addMsg(cls, text) {
-    var el = document.getElementById('msgs');
-    var d = document.createElement('div');
-    d.className = 'm ' + cls;
-    d.innerHTML = text.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>');
-    el.appendChild(d);
-    el.scrollTop = el.scrollHeight;
+  function esc(t) { var d=document.createElement('div'); d.textContent=t; return d.innerHTML; }
+  function fmt(t) {
+    if (!t) return '';
+    return esc(t).replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>');
   }
 
-  function initChat() {
+  function addMsg(role, text) {
     var el = document.getElementById('msgs');
-    el.innerHTML = '';
+    var d = document.createElement('div');
+    d.className = 'msg';
+    var isUser = role === 'user';
+    var icon = isUser
+      ? '<div class="msg-role-icon user-icon">Tu</div>'
+      : '<div class="msg-role-icon bot-icon">HS</div>';
+    var label = isUser ? 'Tu' : 'Hotel Supply Pro';
+    var roleClass = isUser ? 'msg-role-user' : 'msg-role-bot';
+
+    d.innerHTML = '<div class="msg-role ' + roleClass + '">' + icon + label + '</div><div class="msg-body">' + fmt(text) + '</div>';
+    el.appendChild(d);
+    document.getElementById('msg-area').scrollTop = document.getElementById('msg-area').scrollHeight;
+  }
+
+  function showTyping() {
+    var el = document.getElementById('msgs');
+    var d = document.createElement('div');
+    d.className = 'msg'; d.id = 'tp';
+    d.innerHTML = '<div class="msg-role msg-role-bot"><div class="msg-role-icon bot-icon">HS</div>Hotel Supply Pro</div><div class="msg-body typing-dots"><span></span><span></span><span></span></div>';
+    el.appendChild(d);
+    document.getElementById('msg-area').scrollTop = document.getElementById('msg-area').scrollHeight;
+  }
+  function hideTyping() { var t = document.getElementById('tp'); if(t) t.remove(); }
+
+  function initChat() {
+    document.getElementById('msgs').innerHTML = '';
     sessId = crypto.randomUUID();
     var name = customer ? (customer.contact_person||'').split(' ')[0] : '';
-    addMsg('mb', (name?'Ciao '+name+'!':'Ciao!')+'\nSono il tuo assistente per gli acquisti. Cosa posso fare per te?');
+    addMsg('bot', (name ? 'Ciao ' + name + '!' : 'Ciao!') + '\nSono il tuo assistente per gli acquisti. Cosa posso fare per te?');
+
+    // Suggestion chips
+    var el = document.getElementById('msgs');
     var chips = document.createElement('div');
     chips.className = 'chips'; chips.id = 'chps';
-    ['Che prosecco avete?','Prodotti per la colazione','Detersivi cucina','Confronta Coca Cola'].forEach(function(t){
-      var c = document.createElement('span'); c.className='chip'; c.textContent=t;
+    ['Che prosecco avete?', 'Prodotti per la colazione', 'Detersivi per la cucina', 'Confronta prezzi Coca Cola'].forEach(function(t){
+      var c = document.createElement('span'); c.className = 'chip'; c.textContent = t;
       c.addEventListener('click', function(){ chips.remove(); doSend(t); });
       chips.appendChild(c);
     });
     el.appendChild(chips);
+    document.getElementById('cin').focus();
+
+    // Add to sidebar history
+    addChatToSidebar();
   }
 
+  function addChatToSidebar() {
+    var container = document.getElementById('sb-chats');
+    // just show current as active
+    var item = document.createElement('div');
+    item.className = 'sidebar-item active';
+    item.textContent = 'Nuova conversazione';
+    item.id = 'chat-' + sessId;
+    // prepend
+    if (container.firstChild) { container.insertBefore(item, container.firstChild); }
+    else { container.appendChild(item); }
+    // deactivate others
+    container.querySelectorAll('.sidebar-item').forEach(function(el){
+      if (el.id !== 'chat-' + sessId) el.classList.remove('active');
+    });
+  }
+
+  function updateChatTitle(text) {
+    var el = document.getElementById('chat-' + sessId);
+    if (el) el.textContent = text.slice(0, 35) + (text.length > 35 ? '…' : '');
+  }
+
+  var firstUserMsg = true;
   async function doSend(text) {
     if (busy) return;
     if (!text) {
@@ -337,45 +505,46 @@
     if (!text) return;
     var c = document.getElementById('chps'); if(c) c.remove();
 
-    addMsg('mu', text);
-    busy = true;
+    addMsg('user', text);
+    if (firstUserMsg) { updateChatTitle(text); firstUserMsg = false; }
 
-    var tp = document.createElement('div');
-    tp.className='m mb tp'; tp.id='tp';
-    tp.innerHTML='<span></span><span></span><span></span>';
-    document.getElementById('msgs').appendChild(tp);
+    busy = true;
+    document.getElementById('btn-send').disabled = true;
+    showTyping();
 
     try {
       var res = await fetch(N8N, {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          chatInput: text,
-          sessionId: sessId,
+          chatInput: text, sessionId: sessId,
           customerId: customer ? customer.id : '',
           customerName: customer ? (customer.contact_person||'') : '',
           hotelName: customer ? (customer.hotel_name||'') : '',
           companyName: customer ? (customer.company_name||'') : ''
         })
       });
-      var t = document.getElementById('tp'); if(t) t.remove();
+      hideTyping();
       var data = await res.json();
-      var reply = typeof data==='string' ? data : (data.output||data.text||data.response||data.message||JSON.stringify(data));
-      addMsg('mb', reply);
+      var reply = typeof data === 'string' ? data : (data.output||data.text||data.response||data.message||JSON.stringify(data));
+      addMsg('bot', reply);
     } catch(e) {
-      var t = document.getElementById('tp'); if(t) t.remove();
-      addMsg('mb', 'Errore di comunicazione. Riprova.');
-      log('chat error: '+e.message);
+      hideTyping();
+      addMsg('bot', 'Errore di comunicazione. Riprova tra qualche istante.');
     }
     busy = false;
+    document.getElementById('btn-send').disabled = false;
+    document.getElementById('cin').focus();
   }
 
   document.getElementById('btn-send').addEventListener('click', function(){ doSend(); });
   document.getElementById('cin').addEventListener('keydown', function(e){ if(e.key==='Enter') doSend(); });
-  document.getElementById('btn-new').addEventListener('click', function(){ initChat(); });
-  document.getElementById('btn-out').addEventListener('click', function(){
-    log('logout');
-    sb.auth.signOut();
+  document.getElementById('btn-new').addEventListener('click', function(){
+    firstUserMsg = true;
+    initChat();
+    // Close mobile sidebar
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('sb-overlay').classList.remove('open');
   });
 
 })();
