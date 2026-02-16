@@ -6,181 +6,236 @@
   <title>Hotel Supply Pro</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Söhne:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Marked.js for Markdown rendering -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
+    /* ===== LIGHT THEME (default) ===== */
     :root {
-      --sidebar-w: 260px;
-      --bg-main: #212121;
-      --bg-sidebar: #171717;
-      --bg-input: #2f2f2f;
-      --bg-hover: #2f2f2f;
-      --bg-msg-assistant: #2f2f2f;
-      --text-primary: #ececec;
-      --text-secondary: #b4b4b4;
-      --text-muted: #8e8e8e;
-      --border: #383838;
+      --bg-main: #ffffff;
+      --bg-secondary: #f7f7f8;
+      --bg-input: #ffffff;
+      --bg-input-border: #e0e0e0;
+      --bg-hover: #ececec;
+      --bg-code: #f3f4f6;
+      --text-primary: #1a1a1a;
+      --text-secondary: #6b6b6b;
+      --text-muted: #999999;
+      --text-code: #1a1a1a;
+      --border: #e5e5e5;
       --accent: #d4802a;
-      --accent-hover: #e89540;
-      --accent-subtle: rgba(212,128,42,0.12);
-      --radius: 12px;
-      --radius-lg: 24px;
-      --radius-full: 9999px;
-      --font: 'Söhne', system-ui, -apple-system, sans-serif;
+      --accent-hover: #c0721f;
+      --accent-subtle: rgba(212,128,42,0.1);
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+      --msg-user-bg: var(--bg-secondary);
+      --msg-bot-bg: transparent;
+      --auth-card-bg: #ffffff;
+      --auth-input-bg: #f7f7f8;
+    }
+
+    /* ===== DARK THEME ===== */
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-main: #212121;
+        --bg-secondary: #2f2f2f;
+        --bg-input: #303030;
+        --bg-input-border: #424242;
+        --bg-hover: #383838;
+        --bg-code: #1e1e1e;
+        --text-primary: #ececec;
+        --text-secondary: #b4b4b4;
+        --text-muted: #8e8e8e;
+        --text-code: #e0e0e0;
+        --border: #383838;
+        --accent: #d4802a;
+        --accent-hover: #e89540;
+        --accent-subtle: rgba(212,128,42,0.15);
+        --shadow-sm: 0 1px 3px rgba(0,0,0,0.2);
+        --shadow-md: 0 4px 12px rgba(0,0,0,0.3);
+        --msg-user-bg: var(--bg-secondary);
+        --msg-bot-bg: transparent;
+        --auth-card-bg: #2f2f2f;
+        --auth-input-bg: #212121;
+      }
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { height: 100%; }
-    body { font-family: var(--font); background: var(--bg-main); color: var(--text-primary); -webkit-font-smoothing: antialiased; }
+    body {
+      font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
+      background: var(--bg-main); color: var(--text-primary);
+      -webkit-font-smoothing: antialiased; line-height: 1.6;
+    }
     .hide { display: none !important; }
     a { color: var(--accent); text-decoration: none; cursor: pointer; }
     a:hover { color: var(--accent-hover); }
-    ::selection { background: var(--accent-subtle); }
+    ::selection { background: var(--accent-subtle); color: var(--text-primary); }
 
     /* ===== AUTH PAGES ===== */
-    .auth-page { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 1.5rem; }
+    .auth-page { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 1.5rem; background: var(--bg-secondary); }
     .auth-box { width: 100%; max-width: 420px; }
     .auth-box--wide { max-width: 520px; }
-    .auth-logo { text-align: center; margin-bottom: 2rem; }
-    .auth-logo h1 { font-size: 1.5rem; font-weight: 600; letter-spacing: -0.02em; }
+    .auth-logo { text-align: center; margin-bottom: 1.75rem; }
+    .auth-logo h1 { font-size: 1.4rem; font-weight: 700; letter-spacing: -0.02em; }
     .auth-logo h1 span { color: var(--accent); }
-    .auth-logo p { color: var(--text-muted); font-size: 0.9rem; margin-top: 0.3rem; }
-    .auth-card { background: var(--bg-sidebar); border: 1px solid var(--border); border-radius: 16px; padding: 2rem; }
-    .st { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--accent); margin: 1.5rem 0 0.6rem; }
+    .auth-logo p { color: var(--text-muted); font-size: 0.88rem; margin-top: 0.25rem; }
+    .auth-card {
+      background: var(--auth-card-bg); border: 1px solid var(--border);
+      border-radius: 16px; padding: 1.75rem; box-shadow: var(--shadow-md);
+    }
+    .st {
+      font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+      color: var(--accent); margin: 1.3rem 0 0.5rem;
+    }
     .st:first-child { margin-top: 0; }
-    label { display: block; font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 0.25rem; font-weight: 500; }
+    label { display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.2rem; font-weight: 500; }
     input[type="email"], input[type="password"], input[type="text"], input[type="tel"] {
-      width: 100%; padding: 0.65rem 0.85rem; background: var(--bg-input); border: 1px solid var(--border);
-      border-radius: 10px; color: var(--text-primary); font-family: var(--font); font-size: 0.9rem;
-      margin-bottom: 0.6rem; outline: none; transition: border-color 0.15s;
+      width: 100%; padding: 0.6rem 0.8rem; background: var(--auth-input-bg);
+      border: 1px solid var(--border); border-radius: 10px; color: var(--text-primary);
+      font-family: inherit; font-size: 0.88rem; margin-bottom: 0.55rem; outline: none; transition: border-color 0.15s;
     }
     input:focus { border-color: var(--accent); }
     input::placeholder { color: var(--text-muted); }
-    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.55rem; }
     @media(max-width:500px) { .row2 { grid-template-columns: 1fr; } }
-
     .btn {
-      display: inline-flex; align-items: center; justify-content: center;
-      width: 100%; padding: 0.7rem; font-family: var(--font); font-size: 0.92rem; font-weight: 600;
+      display: inline-flex; align-items: center; justify-content: center; width: 100%;
+      padding: 0.65rem; font-family: inherit; font-size: 0.9rem; font-weight: 600;
       border: none; border-radius: 10px; cursor: pointer; transition: all 0.15s;
     }
     .btn:disabled { opacity: 0.5; cursor: not-allowed; }
     .btn-primary { background: var(--accent); color: #fff; }
     .btn-primary:hover:not(:disabled) { background: var(--accent-hover); }
-    .btn-ghost { background: transparent; color: var(--text-secondary); border: 1px solid var(--border); padding: 0.5rem 0.8rem; width: auto; font-size: 0.82rem; font-weight: 500; }
+    .btn-ghost {
+      background: transparent; color: var(--text-secondary); border: 1px solid var(--border);
+      padding: 0.45rem 0.75rem; width: auto; font-size: 0.8rem; font-weight: 500; border-radius: 8px;
+    }
     .btn-ghost:hover:not(:disabled) { background: var(--bg-hover); color: var(--text-primary); }
+    .err { color: #ef4444; font-size: 0.8rem; min-height: 1em; margin: 0.3rem 0; }
+    .ok { color: #22c55e; }
+    .lnk { text-align: center; margin-top: 1.1rem; font-size: 0.84rem; color: var(--text-muted); }
 
-    .err { color: #f87171; font-size: 0.82rem; min-height: 1em; margin: 0.3rem 0; }
-    .ok { color: #4ade80; }
-    .lnk { text-align: center; margin-top: 1.25rem; font-size: 0.85rem; color: var(--text-muted); }
-
-    /* ===== DASHBOARD LAYOUT ===== */
-    .dash { display: flex; height: 100vh; }
-
-    /* Sidebar */
-    .sidebar {
-      width: var(--sidebar-w); background: var(--bg-sidebar); display: flex; flex-direction: column;
-      border-right: 1px solid var(--border); flex-shrink: 0; transition: margin-left 0.25s;
-    }
-    .sidebar-header { padding: 0.75rem; border-bottom: 1px solid var(--border); }
-    .sidebar-header button { width: 100%; }
-    .sidebar-brand { padding: 1rem 0.75rem 0.5rem; font-size: 0.8rem; font-weight: 600; color: var(--text-muted); letter-spacing: 0.04em; text-transform: uppercase; }
-    .sidebar-chats { flex: 1; overflow-y: auto; padding: 0.25rem 0.5rem; }
-    .sidebar-item {
-      padding: 0.55rem 0.75rem; border-radius: 8px; font-size: 0.85rem; color: var(--text-secondary);
-      cursor: pointer; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    }
-    .sidebar-item:hover { background: var(--bg-hover); color: var(--text-primary); }
-    .sidebar-item.active { background: var(--bg-hover); color: var(--text-primary); }
-    .sidebar-footer { padding: 0.75rem; border-top: 1px solid var(--border); }
-    .sidebar-user { display: flex; align-items: center; gap: 0.6rem; padding: 0.5rem; border-radius: 8px; cursor: pointer; }
-    .sidebar-user:hover { background: var(--bg-hover); }
-    .sidebar-avatar {
-      width: 32px; height: 32px; border-radius: 50%; background: var(--accent);
-      display: flex; align-items: center; justify-content: center; font-size: 0.8rem;
-      font-weight: 600; color: #fff; flex-shrink: 0;
-    }
-    .sidebar-user-info { min-width: 0; }
-    .sidebar-user-name { font-size: 0.85rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .sidebar-user-hotel { font-size: 0.75rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-    /* Main area */
-    .main { flex: 1; display: flex; flex-direction: column; min-width: 0; position: relative; }
-    .main-header {
+    /* ===== DASHBOARD ===== */
+    .dash { display: flex; flex-direction: column; height: 100vh; }
+    .dash-header {
       display: flex; align-items: center; justify-content: space-between;
-      padding: 0.6rem 1rem; border-bottom: 1px solid var(--border); background: var(--bg-main);
-      height: 48px; flex-shrink: 0;
+      padding: 0 1rem; height: 52px; border-bottom: 1px solid var(--border);
+      background: var(--bg-main); flex-shrink: 0;
     }
-    .main-header .model-name { font-size: 0.9rem; font-weight: 600; }
-    .hamburger { display: none; background: none; border: none; color: var(--text-secondary); cursor: pointer; padding: 4px; }
-    .hamburger svg { width: 22px; height: 22px; }
+    .dash-header .logo { font-size: 0.95rem; font-weight: 700; }
+    .dash-header .logo span { color: var(--accent); }
+    .dash-header .hotel-tag { font-size: 0.78rem; color: var(--text-muted); margin-left: 0.5rem; }
+    .dash-right { display: flex; align-items: center; gap: 0.4rem; }
+    .dash-right .user-name { font-size: 0.8rem; color: var(--text-secondary); margin-right: 0.25rem; }
 
-    /* Messages area */
+    /* ===== MESSAGES ===== */
     .messages-area { flex: 1; overflow-y: auto; }
-    .messages-inner { max-width: 768px; margin: 0 auto; padding: 1.5rem 1rem 6rem; }
-    .msg { padding: 1rem 0; line-height: 1.65; font-size: 0.95rem; }
-    .msg + .msg { border-top: none; }
-    .msg-role { font-size: 0.8rem; font-weight: 600; margin-bottom: 0.4rem; display: flex; align-items: center; gap: 0.5rem; }
-    .msg-role-user { color: var(--text-secondary); }
-    .msg-role-bot { color: var(--accent); }
-    .msg-role-icon {
-      width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
-      font-size: 0.7rem; font-weight: 700; flex-shrink: 0;
+    .messages-inner { max-width: 720px; margin: 0 auto; padding: 1.25rem 1rem 7rem; }
+    .msg { padding: 1.25rem 0; }
+    .msg + .msg { border-top: 1px solid var(--border); }
+    .msg-head { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; }
+    .msg-icon {
+      width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      font-size: 0.65rem; font-weight: 700; flex-shrink: 0;
     }
-    .msg-role-icon.user-icon { background: #565869; color: #fff; }
-    .msg-role-icon.bot-icon { background: var(--accent); color: #fff; }
-    .msg-body { color: var(--text-primary); }
-    .msg-body strong { color: var(--accent); font-weight: 600; }
+    .msg-icon.u { background: var(--bg-hover); color: var(--text-secondary); }
+    .msg-icon.b { background: var(--accent); color: #fff; }
+    .msg-label { font-size: 0.8rem; font-weight: 600; }
+    .msg-label.u { color: var(--text-secondary); }
+    .msg-label.b { color: var(--accent); }
 
-    /* Typing */
-    .typing-dots span { display: inline-block; width: 8px; height: 8px; background: var(--text-muted); border-radius: 50%; margin-right: 5px; animation: tbounce 1.4s infinite ease-in-out; }
+    /* ===== MARKDOWN RENDERED CONTENT ===== */
+    .msg-body { font-size: 0.92rem; line-height: 1.7; color: var(--text-primary); }
+    .msg-body p { margin-bottom: 0.6em; }
+    .msg-body p:last-child { margin-bottom: 0; }
+    .msg-body strong { font-weight: 600; }
+    .msg-body em { font-style: italic; }
+    .msg-body ul, .msg-body ol { margin: 0.4em 0 0.6em 1.4em; }
+    .msg-body li { margin-bottom: 0.25em; }
+    .msg-body li::marker { color: var(--accent); }
+    .msg-body h1, .msg-body h2, .msg-body h3, .msg-body h4 {
+      font-weight: 700; margin: 1em 0 0.4em; line-height: 1.3;
+    }
+    .msg-body h1 { font-size: 1.3em; }
+    .msg-body h2 { font-size: 1.15em; }
+    .msg-body h3 { font-size: 1.05em; }
+    .msg-body h4 { font-size: 0.95em; }
+    .msg-body code {
+      background: var(--bg-code); color: var(--text-code); padding: 0.15em 0.4em;
+      border-radius: 5px; font-size: 0.85em; font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    }
+    .msg-body pre {
+      background: var(--bg-code); border-radius: 10px; padding: 1em; margin: 0.6em 0;
+      overflow-x: auto; border: 1px solid var(--border);
+    }
+    .msg-body pre code { background: none; padding: 0; font-size: 0.82em; line-height: 1.5; }
+    .msg-body blockquote {
+      border-left: 3px solid var(--accent); padding-left: 0.8em; margin: 0.5em 0;
+      color: var(--text-secondary); font-style: italic;
+    }
+    .msg-body table { border-collapse: collapse; width: 100%; margin: 0.6em 0; font-size: 0.88em; }
+    .msg-body th, .msg-body td { border: 1px solid var(--border); padding: 0.45em 0.7em; text-align: left; }
+    .msg-body th { background: var(--bg-secondary); font-weight: 600; }
+    .msg-body a { color: var(--accent); text-decoration: underline; }
+    .msg-body hr { border: none; border-top: 1px solid var(--border); margin: 1em 0; }
+
+    /* ===== TYPING ===== */
+    .typing-dots span {
+      display: inline-block; width: 8px; height: 8px; background: var(--text-muted);
+      border-radius: 50%; margin-right: 5px; animation: tb 1.4s infinite ease-in-out;
+    }
     .typing-dots span:nth-child(2) { animation-delay: .15s; }
     .typing-dots span:nth-child(3) { animation-delay: .3s; }
-    @keyframes tbounce { 0%,80%,100%{transform:scale(0.5);opacity:0.35} 40%{transform:scale(1);opacity:1} }
+    @keyframes tb { 0%,80%,100%{transform:scale(0.5);opacity:0.3} 40%{transform:scale(1);opacity:1} }
 
-    /* Chips */
+    /* ===== CHIPS ===== */
     .chips { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.75rem; }
     .chip {
-      padding: 0.45rem 0.9rem; border: 1px solid var(--border); border-radius: var(--radius-full);
+      padding: 0.4rem 0.85rem; border: 1px solid var(--border); border-radius: 9999px;
       font-size: 0.82rem; color: var(--text-secondary); cursor: pointer; transition: all 0.15s;
-      background: transparent;
+      background: var(--bg-main);
     }
     .chip:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-subtle); }
 
-    /* Input bar */
+    /* ===== INPUT BAR ===== */
     .input-bar {
       position: absolute; bottom: 0; left: 0; right: 0;
-      padding: 0.75rem 1rem 1.25rem; background: linear-gradient(transparent, var(--bg-main) 30%);
+      padding: 0.75rem 1rem 1rem;
+      background: linear-gradient(transparent 0%, var(--bg-main) 40%);
+      pointer-events: none;
     }
     .input-bar-inner {
-      max-width: 768px; margin: 0 auto; display: flex; align-items: center; gap: 0.5rem;
-      background: var(--bg-input); border: 1px solid var(--border); border-radius: var(--radius-lg);
-      padding: 0.4rem 0.5rem 0.4rem 1rem; transition: border-color 0.15s;
+      pointer-events: all;
+      max-width: 720px; margin: 0 auto; display: flex; align-items: center; gap: 0.5rem;
+      background: var(--bg-input); border: 1px solid var(--bg-input-border);
+      border-radius: 24px; padding: 0.35rem 0.5rem 0.35rem 1rem;
+      box-shadow: var(--shadow-sm); transition: border-color 0.15s, box-shadow 0.15s;
     }
-    .input-bar-inner:focus-within { border-color: var(--accent); }
+    .input-bar-inner:focus-within { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-subtle); }
     .input-bar-inner input {
       flex: 1; background: transparent; border: none; outline: none; color: var(--text-primary);
-      font-family: var(--font); font-size: 0.92rem; padding: 0.5rem 0; margin: 0;
+      font-family: inherit; font-size: 0.9rem; padding: 0.5rem 0; margin: 0;
     }
     .input-bar-inner input::placeholder { color: var(--text-muted); }
     .send-btn {
-      width: 36px; height: 36px; border-radius: 50%; background: var(--accent); border: none;
+      width: 34px; height: 34px; border-radius: 50%; background: var(--accent); border: none;
       display: flex; align-items: center; justify-content: center; cursor: pointer;
       transition: background 0.15s; flex-shrink: 0;
     }
     .send-btn:hover { background: var(--accent-hover); }
     .send-btn:disabled { background: var(--bg-hover); cursor: not-allowed; }
-    .send-btn svg { width: 18px; height: 18px; color: #fff; }
-    .input-disclaimer { text-align: center; font-size: 0.7rem; color: var(--text-muted); margin-top: 0.5rem; }
-
-    /* Mobile sidebar */
-    @media(max-width:768px) {
-      .sidebar { position: fixed; left: 0; top: 0; bottom: 0; z-index: 100; margin-left: calc(-1 * var(--sidebar-w)); }
-      .sidebar.open { margin-left: 0; }
-      .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 99; }
-      .sidebar-overlay.open { display: block; }
-      .hamburger { display: flex; }
+    .send-btn svg { width: 16px; height: 16px; }
+    .disclaimer {
+      pointer-events: all;
+      text-align: center; font-size: 0.68rem; color: var(--text-muted);
+      margin-top: 0.4rem; max-width: 720px; margin-left: auto; margin-right: auto;
     }
+
+    /* ===== RELATIVE WRAPPER for input-bar positioning ===== */
+    .main-wrap { flex: 1; position: relative; display: flex; flex-direction: column; min-height: 0; }
   </style>
 </head>
 <body>
@@ -198,7 +253,7 @@
       <label>Password</label>
       <input type="password" id="l-pass" placeholder="La tua password">
       <div class="err" id="l-err"></div>
-      <button class="btn btn-primary" id="l-btn" style="margin-top:0.5rem">Accedi</button>
+      <button class="btn btn-primary" id="l-btn" style="margin-top:0.4rem">Accedi</button>
     </div>
     <div class="lnk">Non hai un account? <a id="go-reg">Registrati</a></div>
   </div>
@@ -237,7 +292,7 @@
         <div><label>Telefono</label><input type="tel" id="r-phone" placeholder="+39 333 123456"></div>
       </div>
       <div class="err" id="r-err"></div>
-      <button class="btn btn-primary" id="r-btn" style="margin-top:0.5rem">Crea Account</button>
+      <button class="btn btn-primary" id="r-btn" style="margin-top:0.4rem">Crea Account</button>
     </div>
     <div class="lnk">Hai già un account? <a id="go-login">Accedi</a></div>
   </div>
@@ -246,55 +301,32 @@
 <!-- ===== DASHBOARD ===== -->
 <div id="pg-dash" class="hide">
   <div class="dash">
-    <!-- Sidebar overlay for mobile -->
-    <div class="sidebar-overlay" id="sb-overlay"></div>
-
-    <!-- Sidebar -->
-    <aside class="sidebar" id="sidebar">
-      <div class="sidebar-header">
-        <button class="btn btn-ghost" id="btn-new" style="width:100%">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:6px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Nuova chat
+    <div class="dash-header">
+      <div style="display:flex;align-items:center">
+        <div class="logo">Hotel Supply <span>Pro</span></div>
+        <span class="hotel-tag" id="d-hotel"></span>
+      </div>
+      <div class="dash-right">
+        <span class="user-name" id="d-name"></span>
+        <button class="btn-ghost" id="btn-new">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right:4px;vertical-align:-2px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Nuova chat
         </button>
+        <button class="btn-ghost" id="btn-out">Esci</button>
       </div>
-      <div class="sidebar-brand">Le tue chat</div>
-      <div class="sidebar-chats" id="sb-chats">
-        <!-- populated dynamically -->
-      </div>
-      <div class="sidebar-footer">
-        <div class="sidebar-user" id="btn-logout" title="Clicca per uscire">
-          <div class="sidebar-avatar" id="sb-avatar">M</div>
-          <div class="sidebar-user-info">
-            <div class="sidebar-user-name" id="sb-name">Mario Rossi</div>
-            <div class="sidebar-user-hotel" id="sb-hotel">Hotel Fumagalli</div>
-          </div>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2" style="margin-left:auto;flex-shrink:0"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-        </div>
-      </div>
-    </aside>
+    </div>
 
-    <!-- Main -->
-    <div class="main">
-      <div class="main-header">
-        <button class="hamburger" id="btn-menu">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-        </button>
-        <div class="model-name">Hotel Supply <span style="color:var(--accent)">Pro</span></div>
-        <div style="width:22px"></div>
-      </div>
-
+    <div class="main-wrap">
       <div class="messages-area" id="msg-area">
         <div class="messages-inner" id="msgs"></div>
       </div>
-
       <div class="input-bar">
         <div class="input-bar-inner">
           <input type="text" id="cin" placeholder="Scrivi un messaggio...">
           <button class="send-btn" id="btn-send" title="Invia">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg>
           </button>
         </div>
-        <div class="input-disclaimer">Hotel Supply Pro può commettere errori. Verifica le informazioni importanti.</div>
+        <div class="disclaimer">Hotel Supply Pro può commettere errori. Verifica le informazioni importanti.</div>
       </div>
     </div>
   </div>
@@ -302,6 +334,7 @@
 
 <script>
 (function(){
+  // ===== CONFIG =====
   var SUPA_URL = 'https://wvlqjpmphfhkctupwvvd.supabase.co';
   var SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind2bHFqcG1waGZoa2N0dXB3dnZkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA3MzMwNjIsImV4cCI6MjA4NjMwOTA2Mn0.Ov8iONgG-Ou4CuoMFBZ3S7WAlhHaEYrjiiE8u6z9MOg';
   var N8N = 'https://gabbo.app.n8n.cloud/webhook/b5092d51-dd56-49c7-9188-820052fd2ba4/chat';
@@ -310,7 +343,14 @@
   var customer = null;
   var sessId = crypto.randomUUID();
   var busy = false;
-  var chatHistory = []; // [{title, id}]
+
+  // ===== MARKED CONFIG =====
+  marked.setOptions({
+    breaks: true,
+    gfm: true,
+    headerIds: false,
+    mangle: false
+  });
 
   // ===== NAV =====
   function show(id) {
@@ -319,16 +359,6 @@
   }
   document.getElementById('go-reg').addEventListener('click', function(){ show('pg-register'); });
   document.getElementById('go-login').addEventListener('click', function(){ show('pg-login'); });
-
-  // ===== MOBILE SIDEBAR =====
-  document.getElementById('btn-menu').addEventListener('click', function(){
-    document.getElementById('sidebar').classList.toggle('open');
-    document.getElementById('sb-overlay').classList.toggle('open');
-  });
-  document.getElementById('sb-overlay').addEventListener('click', function(){
-    document.getElementById('sidebar').classList.remove('open');
-    document.getElementById('sb-overlay').classList.remove('open');
-  });
 
   // ===== LOGIN =====
   document.getElementById('l-btn').addEventListener('click', async function(){
@@ -345,8 +375,8 @@
       err.textContent = result.error.message === 'Invalid login credentials' ? 'Email o password non corretti.' : result.error.message;
     }
   });
-  // Enter key on login
   document.getElementById('l-pass').addEventListener('keydown', function(e){ if(e.key==='Enter') document.getElementById('l-btn').click(); });
+  document.getElementById('l-email').addEventListener('keydown', function(e){ if(e.key==='Enter') document.getElementById('l-btn').click(); });
 
   // ===== REGISTER =====
   document.getElementById('r-btn').addEventListener('click', async function(){
@@ -380,17 +410,15 @@
   });
 
   // ===== LOGOUT =====
-  document.getElementById('btn-logout').addEventListener('click', function(){ sb.auth.signOut(); });
+  document.getElementById('btn-out').addEventListener('click', function(){ sb.auth.signOut(); });
 
   // ===== LOAD CUSTOMER =====
   async function loadCustomer(userId) {
     var result = await sb.from('customers').select('*').eq('auth_user_id', userId).single();
     customer = result.data || null;
     if (customer) {
-      var initials = (customer.contact_person || 'U').split(' ').map(function(w){ return w[0]; }).join('').toUpperCase().slice(0,2);
-      document.getElementById('sb-avatar').textContent = initials;
-      document.getElementById('sb-name').textContent = customer.contact_person || '';
-      document.getElementById('sb-hotel').textContent = customer.hotel_name || '';
+      document.getElementById('d-hotel').textContent = customer.hotel_name || '';
+      document.getElementById('d-name').textContent = customer.contact_person || '';
     }
   }
 
@@ -401,10 +429,7 @@
       show('pg-dash');
       initChat();
     }
-    if (event === 'SIGNED_OUT') {
-      customer = null;
-      show('pg-login');
-    }
+    if (event === 'SIGNED_OUT') { customer = null; show('pg-login'); }
   });
 
   // ===== INIT =====
@@ -414,30 +439,42 @@
       await loadCustomer(result.data.session.user.id);
       show('pg-dash');
       initChat();
-    } else {
-      show('pg-login');
-    }
+    } else { show('pg-login'); }
   })();
 
-  // ===== CHAT =====
-  function esc(t) { var d=document.createElement('div'); d.textContent=t; return d.innerHTML; }
-  function fmt(t) {
-    if (!t) return '';
-    return esc(t).replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>');
+  // ===== RENDER MARKDOWN =====
+  function renderMd(text) {
+    if (!text) return '';
+    // Use marked to parse markdown, then sanitize basic XSS
+    var html = marked.parse(text);
+    return html;
   }
 
+  // For user messages: just escape HTML and preserve newlines
+  function renderUser(text) {
+    if (!text) return '';
+    var d = document.createElement('div');
+    d.textContent = text;
+    return d.innerHTML.replace(/\n/g, '<br>');
+  }
+
+  // ===== CHAT FUNCTIONS =====
   function addMsg(role, text) {
     var el = document.getElementById('msgs');
     var d = document.createElement('div');
     d.className = 'msg';
     var isUser = role === 'user';
-    var icon = isUser
-      ? '<div class="msg-role-icon user-icon">Tu</div>'
-      : '<div class="msg-role-icon bot-icon">HS</div>';
-    var label = isUser ? 'Tu' : 'Hotel Supply Pro';
-    var roleClass = isUser ? 'msg-role-user' : 'msg-role-bot';
+    var iconClass = isUser ? 'u' : 'b';
+    var iconText = isUser ? 'Tu' : 'HS';
+    var labelText = isUser ? 'Tu' : 'Hotel Supply Pro';
+    var bodyHtml = isUser ? renderUser(text) : renderMd(text);
 
-    d.innerHTML = '<div class="msg-role ' + roleClass + '">' + icon + label + '</div><div class="msg-body">' + fmt(text) + '</div>';
+    d.innerHTML =
+      '<div class="msg-head">' +
+        '<div class="msg-icon ' + iconClass + '">' + iconText + '</div>' +
+        '<div class="msg-label ' + iconClass + '">' + labelText + '</div>' +
+      '</div>' +
+      '<div class="msg-body">' + bodyHtml + '</div>';
     el.appendChild(d);
     document.getElementById('msg-area').scrollTop = document.getElementById('msg-area').scrollHeight;
   }
@@ -446,7 +483,12 @@
     var el = document.getElementById('msgs');
     var d = document.createElement('div');
     d.className = 'msg'; d.id = 'tp';
-    d.innerHTML = '<div class="msg-role msg-role-bot"><div class="msg-role-icon bot-icon">HS</div>Hotel Supply Pro</div><div class="msg-body typing-dots"><span></span><span></span><span></span></div>';
+    d.innerHTML =
+      '<div class="msg-head">' +
+        '<div class="msg-icon b">HS</div>' +
+        '<div class="msg-label b">Hotel Supply Pro</div>' +
+      '</div>' +
+      '<div class="msg-body typing-dots"><span></span><span></span><span></span></div>';
     el.appendChild(d);
     document.getElementById('msg-area').scrollTop = document.getElementById('msg-area').scrollHeight;
   }
@@ -456,9 +498,8 @@
     document.getElementById('msgs').innerHTML = '';
     sessId = crypto.randomUUID();
     var name = customer ? (customer.contact_person||'').split(' ')[0] : '';
-    addMsg('bot', (name ? 'Ciao ' + name + '!' : 'Ciao!') + '\nSono il tuo assistente per gli acquisti. Cosa posso fare per te?');
+    addMsg('bot', (name ? 'Ciao **' + name + '**!' : 'Ciao!') + '\n\nSono il tuo assistente per gli acquisti. Posso aiutarti a cercare prodotti, confrontare prezzi e trovare le migliori offerte.\n\nCosa posso fare per te?');
 
-    // Suggestion chips
     var el = document.getElementById('msgs');
     var chips = document.createElement('div');
     chips.className = 'chips'; chips.id = 'chps';
@@ -469,33 +510,8 @@
     });
     el.appendChild(chips);
     document.getElementById('cin').focus();
-
-    // Add to sidebar history
-    addChatToSidebar();
   }
 
-  function addChatToSidebar() {
-    var container = document.getElementById('sb-chats');
-    // just show current as active
-    var item = document.createElement('div');
-    item.className = 'sidebar-item active';
-    item.textContent = 'Nuova conversazione';
-    item.id = 'chat-' + sessId;
-    // prepend
-    if (container.firstChild) { container.insertBefore(item, container.firstChild); }
-    else { container.appendChild(item); }
-    // deactivate others
-    container.querySelectorAll('.sidebar-item').forEach(function(el){
-      if (el.id !== 'chat-' + sessId) el.classList.remove('active');
-    });
-  }
-
-  function updateChatTitle(text) {
-    var el = document.getElementById('chat-' + sessId);
-    if (el) el.textContent = text.slice(0, 35) + (text.length > 35 ? '…' : '');
-  }
-
-  var firstUserMsg = true;
   async function doSend(text) {
     if (busy) return;
     if (!text) {
@@ -504,10 +520,7 @@
     }
     if (!text) return;
     var c = document.getElementById('chps'); if(c) c.remove();
-
     addMsg('user', text);
-    if (firstUserMsg) { updateChatTitle(text); firstUserMsg = false; }
-
     busy = true;
     document.getElementById('btn-send').disabled = true;
     showTyping();
@@ -539,13 +552,7 @@
 
   document.getElementById('btn-send').addEventListener('click', function(){ doSend(); });
   document.getElementById('cin').addEventListener('keydown', function(e){ if(e.key==='Enter') doSend(); });
-  document.getElementById('btn-new').addEventListener('click', function(){
-    firstUserMsg = true;
-    initChat();
-    // Close mobile sidebar
-    document.getElementById('sidebar').classList.remove('open');
-    document.getElementById('sb-overlay').classList.remove('open');
-  });
+  document.getElementById('btn-new').addEventListener('click', function(){ initChat(); });
 
 })();
 </script>
