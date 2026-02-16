@@ -107,8 +107,9 @@
     .msg-body a{color:var(--accent);text-decoration:underline}
     .msg-body hr{border:none;border-top:1px solid var(--border);margin:1em 0}
 
-    /* ===== INLINE CART BUTTON on <li> ===== */
+    /* ===== INLINE CART BUTTON on <li> and <td> ===== */
     .msg-body li{position:relative}
+    .msg-body td{position:relative}
     .li-cart-btn{
       display:inline-flex;align-items:center;justify-content:center;
       width:24px;height:24px;border-radius:6px;border:1px solid var(--border);
@@ -405,112 +406,130 @@
   function esc(t){var d=document.createElement('div');d.textContent=t;return d.innerHTML}
   function renderUser(t){return esc(t).replace(/\n/g,'<br>')}
 
-  /* ===== INLINE CART: extract product data from <li> and inject buttons ===== */
+  /* =================================================================
+     UNIVERSAL INLINE CART BUTTONS
+     Rule: any element containing a € price gets a cart button.
+     Works on: <li>, <tr>, any format the agent outputs.
+     Extracts: description, supplier, price, uom from the context.
+     ================================================================= */
 
   /**
-   * Parse a top-level <li> that has nested sub-items (Fornitore, Prezzo, Unità...).
-   * Format:
-   *   <li>COCA COLA ZERO VAP 20 cl x24
-   *     <ul><li>Fornitore: ...</li><li>Prezzo: €15,92</li><li>Unità: ...</li></ul>
-   *   </li>
+   * Extract product data from a text string that contains €price.
+   * Returns {description, supplier_name, price, selling_uom} or null.
    */
-  function parseStructuredLi(li){
+  function extractProductFromText(fullText){
+    var text=fullText.replace(/\s+/g,' ').trim();
+    // Must contain a price
+    var priceMatch=text.match(/€\s*(\d+[.,]\d{2})/);
+    if(!priceMatch)return null;
+    var price=parseFloat(priceMatch[1].replace(',','.'));
+
+    // Extract supplier — various patterns
+    var supplier='';
+    // Pattern: (SUPPLIER NAME S.P.A.) or (DAC SPA) etc
+    var suppParen=text.match(/\(([^)]*?(?:S\.?P\.?A\.?|SPA|SRL|S\.R\.L\.)[^)]*)\)/i);
+    if(!suppParen)suppParen=text.match(/\(([^)]*?(?:Bindi|MARR|Forno|Centrofarc|DORECA|DAC)[^)]*)\)/i);
+    if(suppParen){supplier=suppParen[1].trim()}
+    else{
+      // Pattern: Fornitore: SUPPLIER — or – or ,
+      var fornMatch=text.match(/[Ff]ornitore:?\s*([^–—€\n]+)/);
+      if(fornMatch)supplier=fornMatch[1].replace(/[\s\-–—,]+$/,'').trim();
+    }
+
+    // Extract description: the "product name" part
+    var desc='';
+    // Try to get text before first ( or "Fornitore:" or € or –
+    var cutPoints=[
+      suppParen?text.indexOf('('+suppParen[1]+')'):-1,
+      text.toLowerCase().indexOf('fornitore'),
+      text.indexOf('–'),
+      text.indexOf('—'),
+      text.indexOf('€')
+    ].filter(function(i){return i>0});
+    var cutAt=cutPoints.length?Math.min.apply(null,cutPoints):text.indexOf('€');
+    if(cutAt>0)desc=text.substring(0,cutAt);else desc=text;
+    desc=desc.replace(/[\s–—\-,:.]+$/,'').trim();
+
+    // UOM: anything after price that looks like unit info
+    var uom='';
+    var afterPriceIdx=text.indexOf(priceMatch[0])+priceMatch[0].length;
+    var afterPrice=text.substring(afterPriceIdx).trim();
+    if(afterPrice)uom=afterPrice.replace(/^[\s,–—\-()]+/,'').replace(/\)$/,'').trim();
+
+    if(!desc||desc.length<2)return null;
+    return{description:desc,supplier_name:supplier,price:price,selling_uom:uom};
+  }
+
+  /**
+   * Extract product data from a table row <tr>.
+   * Assumes first cell with mostly-uppercase text = product name,
+   * cell with € = price, other cells = supplier/uom.
+   */
+  function extractProductFromRow(tr){
+    var cells=tr.querySelectorAll('td');
+    if(!cells.length)return null;
+
+    var desc='',supplier='',price=null,uom='',priceUnit='';
+    cells.forEach(function(td){
+      var t=td.textContent.trim();
+      // Price cell
+      var pm=t.match(/€\s*(\d+[.,]\d{2})/);
+      if(pm&&price===null){
+        price=parseFloat(pm[1].replace(',','.'));
+        // Check if this is "Prezzo unitario" column — skip, take next price
+        return;
+      }
+      if(pm&&price!==null){
+        // Second price — likely unit price, store but don't overwrite
+        priceUnit=t;
+        return;
+      }
+      // Check if this looks like a product name (has uppercase letters, length > 5)
+      var upperRatio=t.replace(/[^A-ZÀÈÉÌÒÙ]/g,'').length/Math.max(t.length,1);
+      if(!desc&&t.length>3&&upperRatio>0.3){desc=t;return}
+      // Check if this looks like a supplier (known names or S.P.A. pattern)
+      if(!supplier&&/(?:S\.?P\.?A\.?|SPA|SRL|MARR|DAC|DORECA|Bindi|Forno|Centrofarc)/i.test(t)){supplier=t;return}
+      // Otherwise it might be UOM/format
+      if(!uom&&t.length>1&&!/prodotto|fornitore|formato|prezzo/i.test(t))uom=t;
+    });
+
+    if(!desc||price===null)return null;
+    return{description:desc,supplier_name:supplier,price:price,selling_uom:uom};
+  }
+
+  /**
+   * Extract product from a structured <li> with sub-list (Fornitore:, Prezzo:, etc.)
+   */
+  function extractProductFromStructuredLi(li){
     var subLis=li.querySelectorAll(':scope > ul > li, :scope > ol > li');
     if(!subLis.length)return null;
 
-    // The product name is the direct text of the li (excluding children)
+    // Direct text of the li = product name
     var desc='';
     for(var i=0;i<li.childNodes.length;i++){
       var n=li.childNodes[i];
-      if(n.nodeType===3)desc+=n.textContent; // text node
-      else if(n.nodeName!=='UL'&&n.nodeName!=='OL'&&n.nodeName!=='BUTTON'&&n.nodeName!=='DIV'){
-        desc+=n.textContent;
-      }
+      if(n.nodeType===3)desc+=n.textContent;
+      else if(n.nodeName!=='UL'&&n.nodeName!=='OL'&&n.nodeName!=='BUTTON'&&n.nodeName!=='DIV')desc+=n.textContent;
     }
-    desc=desc.replace(/\s+/g,' ').trim();
+    desc=desc.replace(/\s+/g,' ').replace(/[\s:–—\-]+$/,'').trim();
     if(!desc||desc.length<3)return null;
 
     var supplier='',price=null,uom='';
     subLis.forEach(function(s){
-      var t=s.textContent.trim();
-      var tl=t.toLowerCase();
-      if(tl.indexOf('fornitore')===0){supplier=t.replace(/^[Ff]ornitore:\s*/,'').trim()}
+      var t=s.textContent.trim(),tl=t.toLowerCase();
+      if(tl.indexOf('fornitore')===0)supplier=t.replace(/^[Ff]ornitore:?\s*/,'').trim();
       else if(tl.indexOf('prezzo')===0&&tl.indexOf('unitario')===-1){
         var pm=t.match(/€\s*(\d+[.,]\d{2})/);if(pm)price=parseFloat(pm[1].replace(',','.'));
       }
-      else if(tl.indexOf('unit')===0){uom=t.replace(/^[Uu]nit[àa]:\s*/,'').trim()}
+      else if(tl.indexOf('unit')===0)uom=t.replace(/^[Uu]nit[àa]:?\s*/,'').trim();
     });
 
     if(price===null)return null;
     return{description:desc,supplier_name:supplier,price:price,selling_uom:uom};
   }
 
-  /**
-   * Parse a flat <li> with inline product info.
-   * Formats:
-   *   "PROSECCO DOC EXTRA DRY CONTARINI CL75 (DAC SPA) – €4,30 a confezione da 6 bottiglie"
-   *   "MARMELLATA M&G ARANCIA 3 kg\nFornitore: MARR SPA – €13,15 (CT da 1 da 3 kg)"
-   */
-  function parseFlatLi(li){
-    // Skip if this li has sub-lists (handled by parseStructuredLi)
-    if(li.querySelector('ul, ol'))return null;
-    // Skip sub-detail lines (Fornitore:, Prezzo:, Unità:, Prezzo unitario:)
-    var tl=li.textContent.trim().toLowerCase();
-    if(/^(fornitore|prezzo|unit[àa]|marca|codice)/.test(tl))return null;
-
-    var text=li.textContent.replace(/\s+/g,' ').trim();
-    var priceMatch=text.match(/€\s*(\d+[.,]\d{2})/);
-    if(!priceMatch)return null;
-    var price=parseFloat(priceMatch[1].replace(',','.'));
-
-    // Extract supplier from (SUPPLIER) or "Fornitore: SUPPLIER"
-    var supplier='';
-    var suppMatch=text.match(/\(([^)]*(?:S\.?[Pp]\.?[Aa]\.?|SPA|SRL|S\.R\.L\.|Asolo|Bindi)[^)]*)\)/i);
-    if(suppMatch){supplier=suppMatch[1].trim()}
-    else{var fm=text.match(/[Ff]ornitore:\s*([^\-–—€]+)/);if(fm)supplier=fm[1].trim().replace(/\s*$/,'')}
-
-    // Description: text before supplier bracket or "Fornitore:" or price
-    var desc=text;
-    if(suppMatch){desc=text.substring(0,text.indexOf('('+suppMatch[1]+')'))}
-    else{
-      var fi=text.toLowerCase().indexOf('fornitore:');
-      if(fi>0)desc=text.substring(0,fi);
-      else{var pi=text.indexOf('€');if(pi>0)desc=text.substring(0,pi)}
-    }
-    desc=desc.replace(/[\s–—\-,]+$/,'').trim();
-
-    // UOM from after price
-    var afterPrice=text.substring(text.indexOf(priceMatch[0])+priceMatch[0].length).trim();
-    var uom=afterPrice?afterPrice.replace(/^[\s,–—\-()]+/,'').replace(/\)$/,'').trim():'';
-
-    if(!desc||desc.length<3)return null;
-    return{description:desc,supplier_name:supplier,price:price,selling_uom:uom};
-  }
-
-  /**
-   * Also try matching against the products array from <!--PRODUCTS[...]-->
-   */
-  function matchLiToProduct(liText, products){
-    if(!products||!products.length)return null;
-    var norm=liText.replace(/<[^>]+>/g,'').toLowerCase().replace(/\s+/g,' ').trim();
-    var bestMatch=null, bestScore=0;
-    for(var i=0;i<products.length;i++){
-      var p=products[i];
-      var pDesc=(p.description||p.name||'').toLowerCase().trim();
-      if(!pDesc||pDesc.length<3)continue;
-      if(norm.indexOf(pDesc)!==-1)return p;
-      var pWords=pDesc.split(/[\s,.\-–—()\/]+/).filter(function(w){return w.length>=2});
-      if(!pWords.length)continue;
-      var matched=0;
-      for(var j=0;j<pWords.length;j++){if(norm.indexOf(pWords[j])!==-1)matched++}
-      var score=matched/pWords.length;
-      if(score>bestScore&&score>=0.4){bestScore=score;bestMatch=p}
-    }
-    return bestMatch;
-  }
-
-  /* ===== CREATE AND ATTACH CART BUTTON TO A <li> ===== */
-  function attachCartButton(li, productData){
+  /* ===== CREATE AND ATTACH A CART BUTTON ===== */
+  function createCartBtn(productData, insertTarget, insertBefore){
     var pid=productData.id||('p-'+Math.random().toString(36).substr(2,9));
 
     var btn=document.createElement('button');
@@ -538,64 +557,48 @@
       setTimeout(function(){btn.innerHTML=CART_SVG;btn.classList.remove('li-added')},1500);
     });
 
-    // Insert button right after the direct text, before any sub-list
-    var subList=li.querySelector(':scope > ul, :scope > ol');
-    if(subList){li.insertBefore(pop,subList);li.insertBefore(btn,pop)}
-    else{li.appendChild(btn);li.appendChild(pop)}
+    if(insertBefore){insertTarget.insertBefore(btn,insertBefore);insertTarget.insertBefore(pop,insertBefore)}
+    else{insertTarget.appendChild(btn);insertTarget.appendChild(pop)}
   }
 
-  /* ===== MAIN: INJECT INLINE CART BUTTONS ===== */
-  function injectInlineCartButtons(msgEl, products){
-    // Get only top-level <li> elements (not nested sub-items)
-    var topLists=msgEl.querySelectorAll('.msg-body > ul > li, .msg-body > ol > li');
-    // Fallback: if marked wraps in <p> then <ul>, try broader selector
-    if(!topLists.length)topLists=msgEl.querySelectorAll('.msg-body ul > li, .msg-body ol > li');
+  /* ===== MAIN INJECTION: scans entire bot message ===== */
+  function injectInlineCartButtons(msgEl){
+    var body=msgEl.querySelector('.msg-body');
+    if(!body)return;
 
-    var processedLis=new Set();
-
-    topLists.forEach(function(li){
-      if(processedLis.has(li))return;
-
-      // Skip if this li is a child of another li (it's a sub-item)
-      var parentLi=li.parentElement&&li.parentElement.closest('li');
-      if(parentLi)return;
-
-      processedLis.add(li);
-
-      var productData=null;
-
-      // 1. Try matching against products array
-      if(products&&products.length){
-        productData=matchLiToProduct(li.textContent, products);
-      }
-
-      // 2. Try structured format (li with sub-list of details)
-      if(!productData){
-        productData=parseStructuredLi(li);
-      }
-
-      // 3. Try flat format (all info in one line)
-      if(!productData){
-        productData=parseFlatLi(li);
-      }
-
-      if(productData){
-        attachCartButton(li, productData);
-      }
+    // === 1. TABLE ROWS ===
+    body.querySelectorAll('table tbody tr, table tr').forEach(function(tr){
+      // Skip header rows
+      if(tr.querySelector('th'))return;
+      var product=extractProductFromRow(tr);
+      if(!product)return;
+      // Add button to the last <td>
+      var lastTd=tr.querySelector('td:last-child');
+      if(lastTd)createCartBtn(product,lastTd,null);
     });
-  }
 
-  function renderProductCards(products){
-    if(!products||!products.length)return'';
-    var h='<div class="product-grid">';
-    products.forEach(function(p){
-      var pid=p.id||('p-'+Math.random().toString(36).substr(2,9));
-      var pr=typeof p.price==='number'?'€'+p.price.toFixed(2).replace('.',','):(p.price||'');
-      h+='<div class="product-card"><div class="pc-info"><div class="pc-name">'+esc(p.description||p.name||'Prodotto')+'</div><div class="pc-meta">'+esc(p.supplier_name||'')+' · '+esc(p.selling_uom||'')+'</div><div class="pc-price">'+pr+'</div></div>';
-      h+='<div class="pc-right"><div class="pc-qty"><button class="qty-m" data-pid="'+pid+'">−</button><input type="number" class="qty-i" data-pid="'+pid+'" value="1" min="1" max="999"><button class="qty-p" data-pid="'+pid+'">+</button></div>';
-      h+='<button class="add-btn" data-pid="'+pid+'" data-d="'+esc(p.description||p.name||'')+'" data-s="'+esc(p.supplier_name||'')+'" data-pr="'+(p.price||0)+'" data-u="'+esc(p.selling_uom||'')+'">🛒 Aggiungi</button></div></div>';
+    // === 2. LIST ITEMS (top-level only) ===
+    body.querySelectorAll('li').forEach(function(li){
+      // Skip if this li is nested inside another li (sub-item)
+      if(li.parentElement&&li.parentElement.closest('li'))return;
+      // Skip detail sub-items
+      var tl=li.textContent.trim().toLowerCase();
+      if(/^(fornitore|prezzo|unit[àa]|marca|codice|formato)/.test(tl))return;
+
+      var product=null;
+
+      // Try structured format first (li with sub-list)
+      product=extractProductFromStructuredLi(li);
+
+      // Try flat format
+      if(!product)product=extractProductFromText(li.textContent);
+
+      if(!product)return;
+
+      // Insert before sub-list if present, otherwise append
+      var subList=li.querySelector(':scope > ul, :scope > ol');
+      createCartBtn(product,li,subList||null);
     });
-    return h+'</div>';
   }
 
   function addMsg(role,text,products){
@@ -603,20 +606,10 @@
     var isU=role==='user';
     d.innerHTML='<div class="msg-head"><div class="msg-icon '+(isU?'u':'b')+'">'+(isU?'Tu':'HS')+'</div><div class="msg-label '+(isU?'u':'b')+'">'+(isU?'Tu':'Hotel Supply Pro')+'</div></div><div class="msg-body">'+(isU?renderUser(text):marked.parse(text))+'</div>';
     if(!isU){
-      // Inject inline cart buttons on bullet list items
-      injectInlineCartButtons(d, products);
+      injectInlineCartButtons(d);
     }
     el.appendChild(d);
     document.getElementById('msg-area').scrollTop=document.getElementById('msg-area').scrollHeight;
-  }
-  function bindProdBtns(c){
-    c.querySelectorAll('.qty-m').forEach(function(b){b.addEventListener('click',function(){var i=c.querySelector('.qty-i[data-pid="'+b.dataset.pid+'"]');if(i&&parseInt(i.value)>1)i.value=parseInt(i.value)-1})});
-    c.querySelectorAll('.qty-p').forEach(function(b){b.addEventListener('click',function(){var i=c.querySelector('.qty-i[data-pid="'+b.dataset.pid+'"]');if(i)i.value=parseInt(i.value)+1})});
-    c.querySelectorAll('.add-btn').forEach(function(b){b.addEventListener('click',function(){
-      var qi=c.querySelector('.qty-i[data-pid="'+b.dataset.pid+'"]');
-      addToCart({id:b.dataset.pid,description:b.dataset.d,supplier_name:b.dataset.s,price:parseFloat(b.dataset.pr)||0,selling_uom:b.dataset.u,qty:qi?parseInt(qi.value):1});
-      b.textContent='✓ Aggiunto';b.classList.add('added');setTimeout(function(){b.textContent='🛒 Aggiungi';b.classList.remove('added')},1500);
-    })});
   }
   function showTyping(){var el=document.getElementById('msgs'),d=document.createElement('div');d.className='msg';d.id='tp';d.innerHTML='<div class="msg-head"><div class="msg-icon b">HS</div><div class="msg-label b">Hotel Supply Pro</div></div><div class="msg-body typing-dots"><span></span><span></span><span></span></div>';el.appendChild(d);document.getElementById('msg-area').scrollTop=document.getElementById('msg-area').scrollHeight}
   function hideTyping(){var t=document.getElementById('tp');if(t)t.remove()}
