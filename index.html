@@ -1118,6 +1118,7 @@
       messages: [],
       isSending: false,
       initializing: true,
+      pendingCustomerData: null,
     };
 
     // ============ AUTH ERROR TRANSLATIONS ============
@@ -1201,6 +1202,31 @@
         sb.auth.onAuthStateChange(async function(event, session) {
           if (event === 'SIGNED_IN' && session) {
             state.user = session.user;
+
+            // Se c'e' un profilo in attesa (registrazione appena completata)
+            if (state.pendingCustomerData) {
+              var customerData = state.pendingCustomerData;
+              state.pendingCustomerData = null;
+
+              var insertResult = await sb
+                .from('customers')
+                .insert({
+                  auth_user_id: session.user.id,
+                  company_name: customerData.company_name,
+                  vat_number: customerData.vat_number,
+                  hotel_name: customerData.hotel_name,
+                  hotel_address: customerData.hotel_address || null,
+                  phone: customerData.phone || null,
+                  contact_person: customerData.contact_person,
+                  contact_role: customerData.contact_role || null,
+                });
+
+              if (insertResult.error) {
+                console.error('Customer insert error:', insertResult.error);
+                showToast('Errore nel salvataggio del profilo.', 'error');
+              }
+            }
+
             await Auth.loadCustomer();
             Router.navigate('dashboard');
           } else if (event === 'SIGNED_OUT') {
@@ -1232,28 +1258,12 @@
       },
 
       async register(email, password, customerData) {
+        state.pendingCustomerData = customerData;
         var authResult = await sb.auth.signUp({ email: email, password: password });
-        if (authResult.error) throw authResult.error;
-
-        var user = authResult.data.user;
-        if (user) {
-          var insertResult = await sb
-            .from('customers')
-            .insert({
-              auth_user_id: user.id,
-              company_name: customerData.company_name,
-              vat_number: customerData.vat_number,
-              hotel_name: customerData.hotel_name,
-              hotel_address: customerData.hotel_address || null,
-              phone: customerData.phone || null,
-              contact_person: customerData.contact_person,
-              contact_role: customerData.contact_role || null,
-            });
-          if (insertResult.error) {
-            console.error('Customer insert error:', insertResult.error);
-          }
+        if (authResult.error) {
+          state.pendingCustomerData = null;
+          throw authResult.error;
         }
-
         return authResult.data;
       },
 
