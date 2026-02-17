@@ -110,6 +110,7 @@
     /* ===== INLINE CART BUTTON on <li> and <td> ===== */
     .msg-body li{position:relative}
     .msg-body td{position:relative}
+    .product-line{position:relative;display:inline}
     .li-cart-btn{
       display:inline-flex;align-items:center;justify-content:center;
       width:24px;height:24px;border-radius:6px;border:1px solid var(--border);
@@ -122,9 +123,9 @@
     .li-cart-btn.li-added{background:var(--accent);color:#fff;border-color:var(--accent)}
     .li-cart-btn svg{width:14px;height:14px;pointer-events:none}
 
-    /* Inline qty popover */
+    /* Inline qty popover — fixed position so it works everywhere */
     .li-qty-pop{
-      display:none;position:absolute;left:0;top:calc(100% + 4px);z-index:20;
+      display:none;position:fixed;z-index:100;
       background:var(--card-bg);border:1px solid var(--card-border);border-radius:10px;
       padding:.5rem .6rem;box-shadow:var(--shadow-md);
       align-items:center;gap:.35rem;white-space:nowrap;
@@ -541,9 +542,16 @@
     pop.className='li-qty-pop';
     pop.innerHTML='<button class="lqm">−</button><input type="number" class="lqi" value="1" min="1" max="999"><button class="lqp">+</button><button class="li-pop-add">Aggiungi</button>';
 
+    // Append popover to body so fixed positioning works everywhere
+    document.body.appendChild(pop);
+
     btn.addEventListener('click',function(e){
       e.stopPropagation();
       document.querySelectorAll('.li-qty-pop.open').forEach(function(p){if(p!==pop)p.classList.remove('open')});
+      // Position popover below the button
+      var rect=btn.getBoundingClientRect();
+      pop.style.left=rect.left+'px';
+      pop.style.top=(rect.bottom+4)+'px';
       pop.classList.toggle('open');
     });
     pop.querySelector('.lqm').addEventListener('click',function(e){e.stopPropagation();var inp=pop.querySelector('.lqi');if(parseInt(inp.value)>1)inp.value=parseInt(inp.value)-1});
@@ -557,8 +565,8 @@
       setTimeout(function(){btn.innerHTML=CART_SVG;btn.classList.remove('li-added')},1500);
     });
 
-    if(insertBefore){insertTarget.insertBefore(btn,insertBefore);insertTarget.insertBefore(pop,insertBefore)}
-    else{insertTarget.appendChild(btn);insertTarget.appendChild(pop)}
+    if(insertBefore){insertTarget.insertBefore(btn,insertBefore)}
+    else{insertTarget.appendChild(btn)}
   }
 
   /* ===== MAIN INJECTION: scans entire bot message ===== */
