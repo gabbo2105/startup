@@ -337,7 +337,7 @@
     if(!e){err.textContent='Inserisci la tua email.';return}
     btn.disabled=true;btn.textContent='Invio in corso...';
     var r=await sb.auth.resetPasswordForEmail(e,{
-      redirectTo:window.location.origin+window.location.pathname+'#reset-password'
+      redirectTo:window.location.origin+window.location.pathname+'?mode=reset-password'
     });
     btn.disabled=false;btn.textContent='Invia link di reset';
     if(r.error){err.textContent=r.error.message}
@@ -386,10 +386,11 @@
   /* ===== AUTH STATE: handle recovery flow ===== */
   var isRecoveryMode=false;
 
-  // Check URL hash BEFORE Supabase processes it
+  // Check URL BEFORE Supabase processes it
   (function(){
     var hash=window.location.hash||'';
-    if(hash.indexOf('type=recovery')!==-1||hash.indexOf('reset-password')!==-1){
+    var search=window.location.search||'';
+    if(hash.indexOf('type=recovery')!==-1||search.indexOf('mode=reset-password')!==-1){
       isRecoveryMode=true;
     }
   })();
