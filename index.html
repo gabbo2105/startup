@@ -214,7 +214,7 @@
   </div>
 </div>
 
-<!-- NEW PASSWORD (shown after clicking email link) -->
+<!-- NEW PASSWORD -->
 <div id="pg-newpass" class="auth-page hide">
   <div class="auth-box">
     <div class="auth-logo"><h1>Hotel Supply <span>Pro</span></h1><p>Imposta la nuova password</p></div>
@@ -336,12 +336,10 @@
     err.textContent='';
     if(!e){err.textContent='Inserisci la tua email.';return}
     btn.disabled=true;btn.textContent='Invio in corso...';
-    var r=await sb.auth.resetPasswordForEmail(e,{
-      redirectTo:window.location.origin+window.location.pathname+'?mode=reset-password'
-    });
+    var r=await sb.auth.resetPasswordForEmail(e,{redirectTo:window.location.origin+window.location.pathname+'?mode=reset-password'});
     btn.disabled=false;btn.textContent='Invia link di reset';
     if(r.error){err.textContent=r.error.message}
-    else{err.innerHTML='<span class="ok">Email inviata! Controlla la tua casella di posta e clicca il link per reimpostare la password.</span>'}
+    else{err.innerHTML='<span class="ok">Email inviata! Controlla la tua casella di posta.</span>'}
   });
   document.getElementById('f-email').addEventListener('keydown',function(e){if(e.key==='Enter')document.getElementById('f-btn').click()});
 
@@ -353,13 +351,8 @@
     if(p.length<6){err.textContent='La password deve avere almeno 6 caratteri.';return}
     if(p!==p2){err.textContent='Le password non coincidono.';return}
     btn.disabled=true;btn.textContent='Aggiornamento...';
-    // Make sure we have a session before updating
     var sess=await sb.auth.getSession();
-    if(!sess.data.session){
-      err.textContent='Sessione scaduta. Richiedi un nuovo link di reset.';
-      btn.disabled=false;btn.textContent='Aggiorna password';
-      return;
-    }
+    if(!sess.data.session){err.textContent='Sessione scaduta. Richiedi un nuovo link di reset.';btn.disabled=false;btn.textContent='Aggiorna password';return}
     var r=await sb.auth.updateUser({password:p});
     btn.disabled=false;btn.textContent='Aggiorna password';
     if(r.error){err.textContent=r.error.message}
@@ -390,59 +383,30 @@
     if(customer){document.getElementById('d-hotel').textContent=customer.hotel_name||'';document.getElementById('d-name').textContent=customer.contact_person||''}
   }
 
-  /* ===== AUTH STATE: handle recovery flow ===== */
+  /* ===== AUTH STATE ===== */
   var isRecoveryMode=false;
-
-  // Check URL BEFORE Supabase processes it
   (function(){
-    var hash=window.location.hash||'';
-    var search=window.location.search||'';
-    if(hash.indexOf('type=recovery')!==-1||search.indexOf('mode=reset-password')!==-1||hash.indexOf('access_token')!==-1&&search.indexOf('mode=reset-password')!==-1){
-      isRecoveryMode=true;
-    }
+    var hash=window.location.hash||'',search=window.location.search||'';
+    if(hash.indexOf('type=recovery')!==-1||search.indexOf('mode=reset-password')!==-1){isRecoveryMode=true}
   })();
 
   sb.auth.onAuthStateChange(async function(ev,sess){
-    if(ev==='PASSWORD_RECOVERY'){
-      isRecoveryMode=true;
-      show('pg-newpass');
-      return;
-    }
+    if(ev==='PASSWORD_RECOVERY'){isRecoveryMode=true;show('pg-newpass');return}
     if((ev==='SIGNED_IN'||ev==='TOKEN_REFRESHED'||ev==='INITIAL_SESSION')&&sess){
-      if(isRecoveryMode){
-        show('pg-newpass');
-        return;
-      }
+      if(isRecoveryMode){show('pg-newpass');return}
       var npPage=document.getElementById('pg-newpass');
       if(!npPage.classList.contains('hide'))return;
       await loadCustomer(sess.user.id);
       show('pg-dash');initChat();
     }
-    if(ev==='SIGNED_OUT'){customer=null;isRecoveryMode=false;show('pg-login')}
+    if(ev==='SIGNED_OUT'){customer=null;isRecoveryMode=false;cart=[];show('pg-login')}
   });
 
-  // Initial load
   (async function(){
-    if(isRecoveryMode){
-      // Wait a moment for Supabase to process the hash tokens
-      setTimeout(async function(){
-        var r=await sb.auth.getSession();
-        if(r.data.session){
-          show('pg-newpass');
-        }else{
-          // Session not ready yet, onAuthStateChange will handle it
-          show('pg-newpass');
-        }
-      },500);
-      return;
-    }
+    if(isRecoveryMode){setTimeout(async function(){show('pg-newpass')},500);return}
     var r=await sb.auth.getSession();
-    if(r.data.session){
-      await loadCustomer(r.data.session.user.id);
-      show('pg-dash');initChat();
-    }else{
-      show('pg-login');
-    }
+    if(r.data.session){await loadCustomer(r.data.session.user.id);show('pg-dash');initChat()}
+    else{show('pg-login')}
   })();
 
   /* ===== MOBILE CART TOGGLE ===== */
@@ -461,6 +425,26 @@
     }
   });
 
+  /* ===== CART SYNC SU SUPABASE =====
+     Fire-and-forget: non blocca l'UI, errori silenziosamente ignorati.
+     L'agente legge il carrello tramite lo strumento "Carrello" (GET su Supabase REST),
+     quindi non serve più passare cartState nel payload di ogni messaggio. */
+  var syncTimer=null;
+  function syncCart(){
+    if(!customer)return;
+    clearTimeout(syncTimer);
+    syncTimer=setTimeout(async function(){
+      try{
+        await sb.from('cart_sessions').upsert({
+          customer_id:customer.id,
+          session_id:sessId,
+          items:cart,
+          updated_at:new Date().toISOString()
+        },{onConflict:'customer_id,session_id'});
+      }catch(e){/* silenzioso */}
+    },400); // debounce 400ms: raggruppa modifiche rapide in un solo upsert
+  }
+
   /* ===== PARSE AGENT RESPONSE ===== */
   function parseResponse(text){
     var products=[],cartActions=[];
@@ -478,7 +462,7 @@
   function esc(t){var d=document.createElement('div');d.textContent=t;return d.innerHTML}
   function renderUser(t){return esc(t).replace(/\n/g,'<br>')}
 
-  /* ===== INLINE CART BUTTONS (unchanged from original) ===== */
+  /* ===== INLINE CART BUTTONS ===== */
   function extractProductFromText(fullText){var text=fullText.replace(/\s+/g,' ').trim();var priceMatch=text.match(/€\s*(\d+[.,]\d{2})/);if(!priceMatch)return null;var price=parseFloat(priceMatch[1].replace(',','.'));var supplier='';var suppParen=text.match(/\(([^)]*?(?:S\.?P\.?A\.?|SPA|SRL|S\.R\.L\.)[^)]*)\)/i);if(!suppParen)suppParen=text.match(/\(([^)]*?(?:Bindi|MARR|Forno|Centrofarc|DORECA|DAC)[^)]*)\)/i);if(suppParen){supplier=suppParen[1].trim()}else{var fm=text.match(/[Ff]ornitore:?\s*([^–—€\n]+)/);if(fm)supplier=fm[1].replace(/[\s\-–—,]+$/,'').trim()}var desc=text;var cutPoints=[suppParen?text.indexOf('('+suppParen[1]+')'):-1,text.toLowerCase().indexOf('fornitore'),text.indexOf('–'),text.indexOf('—'),text.indexOf('€')].filter(function(i){return i>0});var cutAt=cutPoints.length?Math.min.apply(null,cutPoints):text.indexOf('€');if(cutAt>0)desc=text.substring(0,cutAt);desc=desc.replace(/[\s–—\-,:.•]+$/,'').replace(/^[\s•]+/,'').trim();var uom='';var afterPrice=text.substring(text.indexOf(priceMatch[0])+priceMatch[0].length).trim();if(afterPrice)uom=afterPrice.replace(/^[\s,–—\-()]+/,'').replace(/\)$/,'').trim();if(!desc||desc.length<2)return null;return{description:desc,supplier_name:supplier,price:price,selling_uom:uom}}
   function extractProductFromRow(tr){var cells=tr.querySelectorAll('td');if(!cells.length)return null;var desc='',supplier='',price=null,uom='';cells.forEach(function(td){var t=td.textContent.trim();var pm=t.match(/€\s*(\d+[.,]\d{2})/);if(pm&&price===null){price=parseFloat(pm[1].replace(',','.'));return}if(pm&&price!==null)return;var upperRatio=t.replace(/[^A-ZÀÈÉÌÒÙ]/g,'').length/Math.max(t.length,1);if(!desc&&t.length>3&&upperRatio>0.3){desc=t;return}if(!supplier&&/(?:S\.?P\.?A\.?|SPA|SRL|MARR|DAC|DORECA|Bindi|Forno|Centrofarc)/i.test(t)){supplier=t;return}if(!uom&&t.length>1&&!/prodotto|fornitore|formato|prezzo/i.test(t))uom=t});if(!desc||price===null)return null;return{description:desc,supplier_name:supplier,price:price,selling_uom:uom}}
   function extractProductFromStructuredLi(li){var subLis=li.querySelectorAll(':scope > ul > li, :scope > ol > li');if(!subLis.length)return null;var desc='';for(var i=0;i<li.childNodes.length;i++){var n=li.childNodes[i];if(n.nodeType===3)desc+=n.textContent;else if(n.nodeName!=='UL'&&n.nodeName!=='OL'&&n.nodeName!=='BUTTON'&&n.nodeName!=='DIV')desc+=n.textContent}desc=desc.replace(/\s+/g,' ').replace(/[\s:–—\-]+$/,'').trim();if(!desc||desc.length<3)return null;var supplier='',price=null,uom='';subLis.forEach(function(s){var t=s.textContent.trim(),tl=t.toLowerCase();if(tl.indexOf('fornitore')===0)supplier=t.replace(/^[Ff]ornitore:?\s*/,'').trim();else if(tl.indexOf('prezzo')===0&&tl.indexOf('unitario')===-1){var pm=t.match(/€\s*(\d+[.,]\d{2})/);if(pm)price=parseFloat(pm[1].replace(',','.'));}else if(tl.indexOf('unit')===0)uom=t.replace(/^[Uu]nit[àa]:?\s*/,'').trim()});if(price===null)return null;return{description:desc,supplier_name:supplier,price:price,selling_uom:uom}}
@@ -493,26 +477,114 @@
   function showTyping(){var el=document.getElementById('msgs'),d=document.createElement('div');d.className='msg';d.id='tp';d.innerHTML='<div class="msg-head"><div class="msg-icon b">HS</div><div class="msg-label b">Hotel Supply Pro</div></div><div class="msg-body typing-dots"><span></span><span></span><span></span></div>';el.appendChild(d);document.getElementById('msg-area').scrollTop=document.getElementById('msg-area').scrollHeight}
   function hideTyping(){var t=document.getElementById('tp');if(t)t.remove()}
 
-  function initChat(){document.getElementById('msgs').innerHTML='';sessId=crypto.randomUUID();var name=customer?(customer.contact_person||'').split(' ')[0]:'';addMsg('bot',(name?'Ciao **'+name+'**!':'Ciao!')+'\n\nSono il tuo assistente per gli acquisti. Posso cercare prodotti, confrontare prezzi e gestire il tuo carrello.\n\nCosa posso fare per te?');var el=document.getElementById('msgs'),chips=document.createElement('div');chips.className='chips';chips.id='chps';['Che prosecco avete?','Prodotti per la colazione','Detersivi per la cucina','Confronta prezzi Coca Cola'].forEach(function(t){var c=document.createElement('span');c.className='chip';c.textContent=t;c.addEventListener('click',function(){chips.remove();doSend(t)});chips.appendChild(c)});el.appendChild(chips);document.getElementById('cin').focus()}
+  function initChat(){
+    document.getElementById('msgs').innerHTML='';
+    sessId=crypto.randomUUID();
+    cart=[];
+    syncCart(); // azzera il carrello anche su Supabase alla nuova sessione
+    renderCartSidebar();
+    var name=customer?(customer.contact_person||'').split(' ')[0]:'';
+    addMsg('bot',(name?'Ciao **'+name+'**!':'Ciao!')+'\n\nSono il tuo assistente per gli acquisti. Posso cercare prodotti, confrontare prezzi e gestire il tuo carrello.\n\nCosa posso fare per te?');
+    var el=document.getElementById('msgs'),chips=document.createElement('div');chips.className='chips';chips.id='chps';
+    ['Che prosecco avete?','Prodotti per la colazione','Detersivi per la cucina','Confronta prezzi Coca Cola'].forEach(function(t){var c=document.createElement('span');c.className='chip';c.textContent=t;c.addEventListener('click',function(){chips.remove();doSend(t)});chips.appendChild(c)});
+    el.appendChild(chips);document.getElementById('cin').focus();
+  }
 
-  function cartSummary(){if(!cart.length)return'Il carrello è vuoto.';return'Carrello attuale:\n'+cart.map(function(c){return c.qty+'x '+c.description+' ('+c.supplier_name+', €'+(c.price||0).toFixed(2)+') [id:'+c.id+']'}).join('\n')}
-
-  async function doSend(text){if(busy)return;if(!text){text=document.getElementById('cin').value.trim();document.getElementById('cin').value=''}if(!text)return;var ch=document.getElementById('chps');if(ch)ch.remove();addMsg('user',text);busy=true;document.getElementById('btn-send').disabled=true;showTyping();try{var res=await fetch(N8N,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chatInput:text,sessionId:sessId,customerId:customer?customer.id:'',customerName:customer?(customer.contact_person||''):'',hotelName:customer?(customer.hotel_name||''):'',companyName:customer?(customer.company_name||''):'',cartState:cartSummary()})});hideTyping();var data=await res.json();var raw=typeof data==='string'?data:(data.output||data.text||data.response||data.message||JSON.stringify(data));var p=parseResponse(raw);if(p.cartActions.length)applyCartActions(p.cartActions);addMsg('bot',p.text,p.products)}catch(e){hideTyping();addMsg('bot','Errore di comunicazione. Riprova.')}busy=false;document.getElementById('btn-send').disabled=false;document.getElementById('cin').focus()}
+  /* ===== SEND ===== 
+     RIMOSSO: cartState dal payload — l'agente lo legge da Supabase tramite lo strumento Carrello */
+  async function doSend(text){
+    if(busy)return;
+    if(!text){text=document.getElementById('cin').value.trim();document.getElementById('cin').value=''}
+    if(!text)return;
+    var ch=document.getElementById('chps');if(ch)ch.remove();
+    addMsg('user',text);
+    busy=true;document.getElementById('btn-send').disabled=true;showTyping();
+    try{
+      var res=await fetch(N8N,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+        chatInput:text,
+        sessionId:sessId,
+        customerId:customer?customer.id:'',
+        customerName:customer?(customer.contact_person||''):'',
+        hotelName:customer?(customer.hotel_name||''):'',
+        companyName:customer?(customer.company_name||''):''
+        // cartState rimosso: il carrello è in Supabase, l'agente usa lo strumento "Carrello"
+      })});
+      hideTyping();
+      var data=await res.json();
+      var raw=typeof data==='string'?data:(data.output||data.text||data.response||data.message||JSON.stringify(data));
+      var p=parseResponse(raw);
+      if(p.cartActions.length)applyCartActions(p.cartActions);
+      addMsg('bot',p.text,p.products);
+    }catch(e){hideTyping();addMsg('bot','Errore di comunicazione. Riprova.')}
+    busy=false;document.getElementById('btn-send').disabled=false;document.getElementById('cin').focus();
+  }
 
   document.getElementById('btn-send').addEventListener('click',function(){doSend()});
   document.getElementById('cin').addEventListener('keydown',function(e){if(e.key==='Enter')doSend()});
   document.getElementById('btn-new').addEventListener('click',function(){initChat()});
 
   /* ===== CART ===== */
-  function addToCart(item){var ex=cart.find(function(c){return c.id===item.id});if(ex){ex.qty+=item.qty}else{cart.push({id:item.id,description:item.description,supplier_name:item.supplier_name,price:item.price,selling_uom:item.selling_uom,qty:item.qty})}renderCartSidebar(item.id)}
-  function removeFromCart(id){cart=cart.filter(function(c){return c.id!==id});renderCartSidebar()}
-  function updateQty(id,qty){var it=cart.find(function(c){return c.id===id});if(it){if(qty<1)removeFromCart(id);else{it.qty=qty;renderCartSidebar(id)}}}
+  function addToCart(item){
+    var ex=cart.find(function(c){return c.id===item.id});
+    if(ex){ex.qty+=item.qty}else{cart.push({id:item.id,description:item.description,supplier_name:item.supplier_name,price:item.price,selling_uom:item.selling_uom,qty:item.qty})}
+    renderCartSidebar(item.id);
+    syncCart(); // ← sync dopo ogni aggiunta
+  }
+  function removeFromCart(id){
+    cart=cart.filter(function(c){return c.id!==id});
+    renderCartSidebar();
+    syncCart(); // ← sync dopo ogni rimozione
+  }
+  function updateQty(id,qty){
+    var it=cart.find(function(c){return c.id===id});
+    if(it){if(qty<1)removeFromCart(id);else{it.qty=qty;renderCartSidebar(id);syncCart()}} // ← sync dopo update qty
+  }
 
-  function applyCartActions(actions){actions.forEach(function(a){if(a.action==='add'&&a.id){var ex=cart.find(function(c){return c.id===a.id});if(ex){ex.qty+=(parseInt(a.qty)||1)}else{cart.push({id:a.id,description:a.description||'Prodotto',supplier_name:a.supplier_name||'',price:parseFloat(a.price)||0,selling_uom:a.selling_uom||'',qty:parseInt(a.qty)||1})}}else if(a.action==='remove'){cart=cart.filter(function(c){return c.id!==a.id})}else if(a.action==='update_qty'&&a.id){var it=cart.find(function(c){return c.id===a.id});if(it)it.qty=Math.max(1,parseInt(a.qty)||1)}else if(a.action==='clear'){cart=[]}});renderCartSidebar()}
+  function applyCartActions(actions){
+    actions.forEach(function(a){
+      if(a.action==='add'&&a.id){var ex=cart.find(function(c){return c.id===a.id});if(ex){ex.qty+=(parseInt(a.qty)||1)}else{cart.push({id:a.id,description:a.description||'Prodotto',supplier_name:a.supplier_name||'',price:parseFloat(a.price)||0,selling_uom:a.selling_uom||'',qty:parseInt(a.qty)||1})}}
+      else if(a.action==='remove'){cart=cart.filter(function(c){return c.id!==a.id})}
+      else if(a.action==='update_qty'&&a.id){var it=cart.find(function(c){return c.id===a.id});if(it)it.qty=Math.max(1,parseInt(a.qty)||1)}
+      else if(a.action==='clear'){cart=[]}
+    });
+    renderCartSidebar();
+    syncCart(); // ← sync dopo ogni azione agente
+  }
 
-  function renderCartSidebar(flashId){var el=document.getElementById('cart-items');var cnt=cart.reduce(function(s,c){return s+c.qty},0);var total=cart.reduce(function(s,c){return s+c.price*c.qty},0);var cntEl=document.getElementById('cart-count');cntEl.textContent=cnt;cntEl.className='cart-count'+(cnt===0?' z':'');document.getElementById('cart-total').textContent='€'+total.toFixed(2).replace('.',',');document.getElementById('cart-send').disabled=cart.length===0;var mob=document.getElementById('cart-badge-mob');if(cnt>0){mob.textContent=cnt;mob.classList.remove('hide')}else{mob.classList.add('hide')}if(!cart.length){el.innerHTML='<div class="cart-sb-empty"><div class="cart-empty-icon">🛒</div>Il carrello è vuoto.<br>Cerca prodotti e aggiungili qui.</div>';return}var h='';cart.forEach(function(c){var flash=flashId===c.id?' csi-flash':'';h+='<div class="csi'+flash+'" data-id="'+c.id+'">';h+='<div class="csi-info"><div class="csi-name">'+esc(c.description)+'</div><div class="csi-det">'+esc(c.supplier_name)+' · '+esc(c.selling_uom)+'</div><div class="csi-price">€'+(c.price*c.qty).toFixed(2).replace('.',',')+'</div></div>';h+='<div class="csi-q"><button class="cq-m" data-id="'+c.id+'">−</button><span>'+c.qty+'</span><button class="cq-p" data-id="'+c.id+'">+</button></div>';h+='<button class="csi-rm" data-id="'+c.id+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>';h+='</div>'});el.innerHTML=h;if(flashId){setTimeout(function(){var f=el.querySelector('.csi-flash');if(f)f.classList.remove('csi-flash')},400)}el.querySelectorAll('.cq-m').forEach(function(b){b.addEventListener('click',function(){var it=cart.find(function(c){return c.id===b.dataset.id});if(it)updateQty(b.dataset.id,it.qty-1)})});el.querySelectorAll('.cq-p').forEach(function(b){b.addEventListener('click',function(){var it=cart.find(function(c){return c.id===b.dataset.id});if(it)updateQty(b.dataset.id,it.qty+1)})});el.querySelectorAll('.csi-rm').forEach(function(b){b.addEventListener('click',function(){removeFromCart(b.dataset.id)})})}
+  function renderCartSidebar(flashId){
+    var el=document.getElementById('cart-items');
+    var cnt=cart.reduce(function(s,c){return s+c.qty},0);
+    var total=cart.reduce(function(s,c){return s+c.price*c.qty},0);
+    var cntEl=document.getElementById('cart-count');cntEl.textContent=cnt;cntEl.className='cart-count'+(cnt===0?' z':'');
+    document.getElementById('cart-total').textContent='€'+total.toFixed(2).replace('.',',');
+    document.getElementById('cart-send').disabled=cart.length===0;
+    var mob=document.getElementById('cart-badge-mob');
+    if(cnt>0){mob.textContent=cnt;mob.classList.remove('hide')}else{mob.classList.add('hide')}
+    if(!cart.length){el.innerHTML='<div class="cart-sb-empty"><div class="cart-empty-icon">🛒</div>Il carrello è vuoto.<br>Cerca prodotti e aggiungili qui.</div>';return}
+    var h='';
+    cart.forEach(function(c){
+      var flash=flashId===c.id?' csi-flash':'';
+      h+='<div class="csi'+flash+'" data-id="'+c.id+'">';
+      h+='<div class="csi-info"><div class="csi-name">'+esc(c.description)+'</div><div class="csi-det">'+esc(c.supplier_name)+' · '+esc(c.selling_uom)+'</div><div class="csi-price">€'+(c.price*c.qty).toFixed(2).replace('.',',')+'</div></div>';
+      h+='<div class="csi-q"><button class="cq-m" data-id="'+c.id+'">−</button><span>'+c.qty+'</span><button class="cq-p" data-id="'+c.id+'">+</button></div>';
+      h+='<button class="csi-rm" data-id="'+c.id+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>';
+      h+='</div>';
+    });
+    el.innerHTML=h;
+    if(flashId){setTimeout(function(){var f=el.querySelector('.csi-flash');if(f)f.classList.remove('csi-flash')},400)}
+    el.querySelectorAll('.cq-m').forEach(function(b){b.addEventListener('click',function(){var it=cart.find(function(c){return c.id===b.dataset.id});if(it)updateQty(b.dataset.id,it.qty-1)})});
+    el.querySelectorAll('.cq-p').forEach(function(b){b.addEventListener('click',function(){var it=cart.find(function(c){return c.id===b.dataset.id});if(it)updateQty(b.dataset.id,it.qty+1)})});
+    el.querySelectorAll('.csi-rm').forEach(function(b){b.addEventListener('click',function(){removeFromCart(b.dataset.id)})});
+  }
 
-  document.getElementById('cart-send').addEventListener('click',function(){if(!cart.length)return;var msg='Vorrei ordinare:\n';cart.forEach(function(c){msg+='- '+c.qty+'x '+c.description+' ('+c.supplier_name+', €'+(c.price||0).toFixed(2).replace('.',',')+')\n'});document.getElementById('cart-sb').classList.remove('open');document.getElementById('cart-mob-overlay').classList.remove('open');doSend(msg)});
+  document.getElementById('cart-send').addEventListener('click',function(){
+    if(!cart.length)return;
+    var msg='Vorrei ordinare:\n';
+    cart.forEach(function(c){msg+='- '+c.qty+'x '+c.description+' ('+c.supplier_name+', €'+(c.price||0).toFixed(2).replace('.',',')+')\n'});
+    document.getElementById('cart-sb').classList.remove('open');
+    document.getElementById('cart-mob-overlay').classList.remove('open');
+    doSend(msg);
+  });
 
   renderCartSidebar();
 })();
