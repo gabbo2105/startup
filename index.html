@@ -356,7 +356,7 @@
     var r=await sb.auth.updateUser({password:p});
     btn.disabled=false;btn.textContent='Aggiorna password';
     if(r.error){err.textContent=r.error.message}
-    else{err.innerHTML='<span class="ok">Password aggiornata! Reindirizzamento...</span>';setTimeout(function(){show('pg-dash')},1500)}
+    else{err.innerHTML='<span class="ok">Password aggiornata! Reindirizzamento...</span>';isRecoveryMode=false;window.location.hash='';setTimeout(function(){show('pg-dash');initChat()},1500)}
   });
   document.getElementById('np-pass2').addEventListener('keydown',function(e){if(e.key==='Enter')document.getElementById('np-btn').click()});
 
@@ -384,33 +384,42 @@
   }
 
   /* ===== AUTH STATE: handle recovery flow ===== */
+  var isRecoveryMode=false;
+
+  // Check URL hash BEFORE Supabase processes it
+  (function(){
+    var hash=window.location.hash||'';
+    if(hash.indexOf('type=recovery')!==-1||hash.indexOf('reset-password')!==-1){
+      isRecoveryMode=true;
+    }
+  })();
+
   sb.auth.onAuthStateChange(async function(ev,sess){
-    if(ev==='PASSWORD_RECOVERY'){
-      // User clicked the reset link in the email → show new password form
+    if(ev==='PASSWORD_RECOVERY'||isRecoveryMode){
+      isRecoveryMode=true;
       show('pg-newpass');
       return;
     }
     if(ev==='SIGNED_IN'&&sess){
-      await loadCustomer(sess.user.id);
-      // Don't redirect to dash if we're on the new password page
+      // Don't redirect to dash if we're resetting password
       var npPage=document.getElementById('pg-newpass');
       if(!npPage.classList.contains('hide'))return;
+      if(isRecoveryMode)return;
+      await loadCustomer(sess.user.id);
       show('pg-dash');initChat();
     }
-    if(ev==='SIGNED_OUT'){customer=null;show('pg-login')}
+    if(ev==='SIGNED_OUT'){customer=null;isRecoveryMode=false;show('pg-login')}
   });
 
-  // Initial load: check for existing session or recovery hash
+  // Initial load
   (async function(){
-    var hash=window.location.hash;
-    // Supabase puts tokens in the hash after email link click
-    // The onAuthStateChange PASSWORD_RECOVERY event handles this
+    if(isRecoveryMode){
+      // Let onAuthStateChange handle it, just show newpass immediately
+      show('pg-newpass');
+      return;
+    }
     var r=await sb.auth.getSession();
     if(r.data.session){
-      // If hash indicates reset, let onAuthStateChange handle it
-      if(hash&&(hash.indexOf('type=recovery')!==-1||hash.indexOf('reset-password')!==-1)){
-        return; // onAuthStateChange will fire PASSWORD_RECOVERY
-      }
       await loadCustomer(r.data.session.user.id);
       show('pg-dash');initChat();
     }else{
