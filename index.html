@@ -599,6 +599,67 @@
       var subList=li.querySelector(':scope > ul, :scope > ol');
       createCartBtn(product,li,subList||null);
     });
+
+    // === 3. TEXT LINES WITH • OR – THAT CONTAIN € (not inside <li> or <td>) ===
+    // The agent sometimes uses "• PRODUCT – €price" which marked.js renders as
+    // plain text inside <p> tags, not as <ul><li>. We need to find these lines
+    // and inject cart buttons.
+    body.querySelectorAll('p').forEach(function(p){
+      // Skip if no € in this paragraph
+      if(p.textContent.indexOf('€')===-1)return;
+      // Skip if inside a table or list (already handled)
+      if(p.closest('table, li'))return;
+
+      // Split by <br> to get individual lines
+      var html=p.innerHTML;
+      var lines=html.split(/<br\s*\/?>/i);
+      if(lines.length<=1&&html.indexOf('€')!==-1){
+        // Single line paragraph with €
+        var product=extractProductFromText(p.textContent);
+        if(product){
+          createCartBtn(product,p,null);
+        }
+        return;
+      }
+
+      // Multiple lines separated by <br> — rebuild with buttons
+      var needsRebuild=false;
+      var newLines=[];
+      for(var i=0;i<lines.length;i++){
+        var line=lines[i];
+        // Create a temp element to get text content
+        var tmp=document.createElement('span');
+        tmp.innerHTML=line;
+        var lineText=tmp.textContent.trim();
+
+        if(lineText.indexOf('€')!==-1){
+          var product=extractProductFromText(lineText);
+          if(product){
+            needsRebuild=true;
+            // Mark this line with a data attribute for button injection
+            var lineId='pline-'+Math.random().toString(36).substr(2,6);
+            newLines.push('<span class="product-line" data-lineid="'+lineId+'" data-desc="'+esc(product.description)+'" data-sup="'+esc(product.supplier_name)+'" data-price="'+product.price+'" data-uom="'+esc(product.selling_uom)+'">'+line+'</span>');
+            continue;
+          }
+        }
+        newLines.push(line);
+      }
+
+      if(needsRebuild){
+        p.innerHTML=newLines.join('<br>');
+        // Now inject buttons on marked spans
+        p.querySelectorAll('.product-line').forEach(function(span){
+          var prodData={
+            description:span.dataset.desc,
+            supplier_name:span.dataset.sup,
+            price:parseFloat(span.dataset.price)||0,
+            selling_uom:span.dataset.uom
+          };
+          span.style.display='inline';
+          createCartBtn(prodData,span,null);
+        });
+      }
+    });
   }
 
   function addMsg(role,text,products){
