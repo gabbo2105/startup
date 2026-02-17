@@ -353,6 +353,13 @@
     if(p.length<6){err.textContent='La password deve avere almeno 6 caratteri.';return}
     if(p!==p2){err.textContent='Le password non coincidono.';return}
     btn.disabled=true;btn.textContent='Aggiornamento...';
+    // Make sure we have a session before updating
+    var sess=await sb.auth.getSession();
+    if(!sess.data.session){
+      err.textContent='Sessione scaduta. Richiedi un nuovo link di reset.';
+      btn.disabled=false;btn.textContent='Aggiorna password';
+      return;
+    }
     var r=await sb.auth.updateUser({password:p});
     btn.disabled=false;btn.textContent='Aggiorna password';
     if(r.error){err.textContent=r.error.message}
@@ -390,22 +397,24 @@
   (function(){
     var hash=window.location.hash||'';
     var search=window.location.search||'';
-    if(hash.indexOf('type=recovery')!==-1||search.indexOf('mode=reset-password')!==-1){
+    if(hash.indexOf('type=recovery')!==-1||search.indexOf('mode=reset-password')!==-1||hash.indexOf('access_token')!==-1&&search.indexOf('mode=reset-password')!==-1){
       isRecoveryMode=true;
     }
   })();
 
   sb.auth.onAuthStateChange(async function(ev,sess){
-    if(ev==='PASSWORD_RECOVERY'||isRecoveryMode){
+    if(ev==='PASSWORD_RECOVERY'){
       isRecoveryMode=true;
       show('pg-newpass');
       return;
     }
-    if(ev==='SIGNED_IN'&&sess){
-      // Don't redirect to dash if we're resetting password
+    if((ev==='SIGNED_IN'||ev==='TOKEN_REFRESHED'||ev==='INITIAL_SESSION')&&sess){
+      if(isRecoveryMode){
+        show('pg-newpass');
+        return;
+      }
       var npPage=document.getElementById('pg-newpass');
       if(!npPage.classList.contains('hide'))return;
-      if(isRecoveryMode)return;
       await loadCustomer(sess.user.id);
       show('pg-dash');initChat();
     }
@@ -415,8 +424,16 @@
   // Initial load
   (async function(){
     if(isRecoveryMode){
-      // Let onAuthStateChange handle it, just show newpass immediately
-      show('pg-newpass');
+      // Wait a moment for Supabase to process the hash tokens
+      setTimeout(async function(){
+        var r=await sb.auth.getSession();
+        if(r.data.session){
+          show('pg-newpass');
+        }else{
+          // Session not ready yet, onAuthStateChange will handle it
+          show('pg-newpass');
+        }
+      },500);
       return;
     }
     var r=await sb.auth.getSession();
