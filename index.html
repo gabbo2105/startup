@@ -64,6 +64,7 @@
     .btn-ghost:hover:not(:disabled){background:var(--bg-hover);color:var(--text)}
     .err{color:#ef4444;font-size:.8rem;min-height:1em;margin:.3rem 0}.ok{color:#22c55e}
     .lnk{text-align:center;margin-top:1.1rem;font-size:.84rem;color:var(--text3)}
+    .lnk-row{display:flex;justify-content:space-between;margin-top:1.1rem;font-size:.84rem;color:var(--text3)}
 
     /* ===== DASHBOARD ===== */
     .dash{display:flex;flex-direction:column;height:100vh}
@@ -72,14 +73,12 @@
     .hotel-tag{font-size:.78rem;color:var(--text3);margin-left:.5rem}
     .dash-right{display:flex;align-items:center;gap:.4rem}
     .user-name{font-size:.8rem;color:var(--text2);margin-right:.25rem}
-    /* Mobile cart toggle */
     .cart-toggle{position:relative;background:none;border:1px solid var(--border);border-radius:8px;padding:.4rem .55rem;cursor:pointer;color:var(--text2);display:none;align-items:center;transition:all .15s}
     .cart-toggle:hover{background:var(--bg-hover);color:var(--text);border-color:var(--accent)}
     .cart-toggle svg{width:18px;height:18px}
     .cart-badge{position:absolute;top:-6px;right:-6px;background:var(--cart-badge);color:#fff;font-size:.65rem;font-weight:700;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center}
     .cart-badge.hide{display:none}
 
-    /* ===== BODY: chat + sidebar ===== */
     .dash-body{flex:1;display:flex;min-height:0;overflow:hidden}
     .chat-col{flex:1;position:relative;display:flex;flex-direction:column;min-width:0}
     .messages-area{flex:1;overflow-y:auto}
@@ -90,7 +89,6 @@
     .msg-icon.u{background:var(--bg3);color:var(--text2)}.msg-icon.b{background:var(--accent);color:#fff}
     .msg-label{font-size:.8rem;font-weight:600}.msg-label.u{color:var(--text2)}.msg-label.b{color:var(--accent)}
 
-    /* Markdown */
     .msg-body{font-size:.92rem;line-height:1.7;color:var(--text)}
     .msg-body p{margin-bottom:.6em}.msg-body p:last-child{margin-bottom:0}
     .msg-body strong{font-weight:600}
@@ -107,30 +105,15 @@
     .msg-body a{color:var(--accent);text-decoration:underline}
     .msg-body hr{border:none;border-top:1px solid var(--border);margin:1em 0}
 
-    /* ===== INLINE CART BUTTON on <li>, <td>, <span> ===== */
     .msg-body li{position:relative}
     .msg-body td{position:relative}
     .product-line{display:inline}
-    .li-cart-btn{
-      display:inline-flex;align-items:center;justify-content:center;
-      width:24px;height:24px;border-radius:6px;border:1px solid var(--border);
-      background:var(--bg);color:var(--accent);cursor:pointer;
-      margin-left:.4rem;vertical-align:middle;
-      transition:all .2s ease;flex-shrink:0;
-      position:relative;top:-1px;
-    }
+    .li-cart-btn{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--accent);cursor:pointer;margin-left:.4rem;vertical-align:middle;transition:all .2s ease;flex-shrink:0;position:relative;top:-1px}
     .li-cart-btn:hover{background:var(--accent);color:#fff;border-color:var(--accent);transform:scale(1.1)}
     .li-cart-btn.li-added{background:var(--accent);color:#fff;border-color:var(--accent)}
     .li-cart-btn svg{width:14px;height:14px;pointer-events:none}
 
-    /* Qty popover — fixed, appended to body */
-    .li-qty-pop{
-      display:none;position:fixed;z-index:9999;
-      background:var(--card-bg);border:1px solid var(--card-border);border-radius:10px;
-      padding:.5rem .6rem;box-shadow:var(--shadow-md);
-      align-items:center;gap:.35rem;white-space:nowrap;
-      animation:popIn .2s ease;
-    }
+    .li-qty-pop{display:none;position:fixed;z-index:9999;background:var(--card-bg);border:1px solid var(--card-border);border-radius:10px;padding:.5rem .6rem;box-shadow:var(--shadow-md);align-items:center;gap:.35rem;white-space:nowrap;animation:popIn .2s ease}
     .li-qty-pop.open{display:inline-flex}
     @keyframes popIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
     .li-qty-pop button{width:26px;height:26px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:.9rem;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:inherit}
@@ -140,17 +123,14 @@
     .li-qty-pop .pop-cart:hover{background:var(--accent-h)}
     .li-qty-pop .pop-cart svg{width:15px;height:15px;pointer-events:none}
 
-    /* Typing */
     .typing-dots span{display:inline-block;width:8px;height:8px;background:var(--text3);border-radius:50%;margin-right:5px;animation:tb 1.4s infinite ease-in-out}
     .typing-dots span:nth-child(2){animation-delay:.15s}.typing-dots span:nth-child(3){animation-delay:.3s}
     @keyframes tb{0%,80%,100%{transform:scale(.5);opacity:.3}40%{transform:scale(1);opacity:1}}
 
-    /* Chips */
     .chips{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.75rem}
     .chip{padding:.4rem .85rem;border:1px solid var(--border);border-radius:9999px;font-size:.82rem;color:var(--text2);cursor:pointer;transition:all .15s;background:var(--bg)}
     .chip:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-s)}
 
-    /* Input bar */
     .input-bar{position:absolute;bottom:0;left:0;right:0;padding:.75rem 1rem 1rem;background:linear-gradient(transparent 0%,var(--bg) 40%);pointer-events:none}
     .input-bar-inner{pointer-events:all;max-width:720px;margin:0 auto;display:flex;align-items:center;gap:.5rem;background:var(--bg-input);border:1px solid var(--bg-input-border);border-radius:24px;padding:.35rem .5rem .35rem 1rem;box-shadow:var(--shadow);transition:border-color .15s,box-shadow .15s}
     .input-bar-inner:focus-within{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-s)}
@@ -161,7 +141,6 @@
     .send-btn svg{width:16px;height:16px}
     .disclaimer{pointer-events:all;text-align:center;font-size:.68rem;color:var(--text3);margin-top:.4rem;max-width:720px;margin-left:auto;margin-right:auto}
 
-    /* ===== CART SIDEBAR ===== */
     .cart-sb{width:300px;background:var(--sidebar-bg);border-left:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0}
     .cart-sb-head{display:flex;align-items:center;justify-content:space-between;padding:.65rem .85rem;border-bottom:1px solid var(--border)}
     .cart-sb-head h3{font-size:.85rem;font-weight:700;display:flex;align-items:center;gap:.4rem}
@@ -194,7 +173,6 @@
     .cart-sb-foot button:hover{background:var(--accent-h)}
     .cart-sb-foot button:disabled{opacity:.5;cursor:not-allowed}
 
-    /* Mobile: sidebar overlay */
     .cart-mob-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:49}
     .cart-mob-overlay.open{display:block}
     @media(max-width:900px){
@@ -216,7 +194,36 @@
       <div class="err" id="l-err"></div>
       <button class="btn btn-primary" id="l-btn" style="margin-top:.4rem">Accedi</button>
     </div>
-    <div class="lnk">Non hai un account? <a id="go-reg">Registrati</a></div>
+    <div class="lnk-row">
+      <span><a id="go-forgot">Password dimenticata?</a></span>
+      <span>Non hai un account? <a id="go-reg">Registrati</a></span>
+    </div>
+  </div>
+</div>
+
+<!-- FORGOT PASSWORD -->
+<div id="pg-forgot" class="auth-page hide">
+  <div class="auth-box">
+    <div class="auth-logo"><h1>Hotel Supply <span>Pro</span></h1><p>Recupera la tua password</p></div>
+    <div class="auth-card">
+      <label>Email</label><input type="email" id="f-email" placeholder="email@esempio.com">
+      <div class="err" id="f-err"></div>
+      <button class="btn btn-primary" id="f-btn" style="margin-top:.4rem">Invia link di reset</button>
+    </div>
+    <div class="lnk">Ricordi la password? <a id="go-login-from-forgot">Accedi</a></div>
+  </div>
+</div>
+
+<!-- NEW PASSWORD (shown after clicking email link) -->
+<div id="pg-newpass" class="auth-page hide">
+  <div class="auth-box">
+    <div class="auth-logo"><h1>Hotel Supply <span>Pro</span></h1><p>Imposta la nuova password</p></div>
+    <div class="auth-card">
+      <label>Nuova password</label><input type="password" id="np-pass" placeholder="Min 6 caratteri">
+      <label>Conferma password</label><input type="password" id="np-pass2" placeholder="Ripeti password">
+      <div class="err" id="np-err"></div>
+      <button class="btn btn-primary" id="np-btn" style="margin-top:.4rem">Aggiorna password</button>
+    </div>
   </div>
 </div>
 
@@ -262,9 +269,7 @@
         <button class="btn-ghost" id="btn-out">Esci</button>
       </div>
     </div>
-
     <div class="dash-body">
-      <!-- Chat -->
       <div class="chat-col">
         <div class="messages-area" id="msg-area">
           <div class="messages-inner" id="msgs"></div>
@@ -277,12 +282,8 @@
           <div class="disclaimer">Hotel Supply Pro può commettere errori. Verifica le informazioni importanti.</div>
         </div>
       </div>
-
-      <!-- Cart Sidebar (always visible on desktop) -->
       <aside class="cart-sb" id="cart-sb">
-        <div class="cart-sb-head">
-          <h3>🛒 Carrello <span class="cart-count z" id="cart-count">0</span></h3>
-        </div>
+        <div class="cart-sb-head"><h3>🛒 Carrello <span class="cart-count z" id="cart-count">0</span></h3></div>
         <div class="cart-sb-items" id="cart-items"></div>
         <div class="cart-sb-foot">
           <div class="cart-sb-total"><span>Totale</span><span class="cst-amt" id="cart-total">€0,00</span></div>
@@ -293,7 +294,6 @@
   </div>
 </div>
 
-<!-- Mobile cart overlay -->
 <div class="cart-mob-overlay" id="cart-mob-overlay"></div>
 
 <script>
@@ -307,14 +307,16 @@
 
   marked.setOptions({breaks:true,gfm:true});
 
-  /* ===== CART ICON SVG (reusable) ===== */
   var CART_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>';
   var CHECK_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
 
   /* ===== NAV ===== */
-  function show(id){['pg-login','pg-register','pg-dash'].forEach(function(p){document.getElementById(p).classList.add('hide')});document.getElementById(id).classList.remove('hide')}
+  var ALL_PAGES=['pg-login','pg-register','pg-dash','pg-forgot','pg-newpass'];
+  function show(id){ALL_PAGES.forEach(function(p){document.getElementById(p).classList.add('hide')});document.getElementById(id).classList.remove('hide')}
   document.getElementById('go-reg').addEventListener('click',function(){show('pg-register')});
   document.getElementById('go-login').addEventListener('click',function(){show('pg-login')});
+  document.getElementById('go-forgot').addEventListener('click',function(){show('pg-forgot')});
+  document.getElementById('go-login-from-forgot').addEventListener('click',function(){show('pg-login')});
 
   /* ===== LOGIN ===== */
   document.getElementById('l-btn').addEventListener('click',async function(){
@@ -327,6 +329,36 @@
   });
   document.getElementById('l-pass').addEventListener('keydown',function(e){if(e.key==='Enter')document.getElementById('l-btn').click()});
   document.getElementById('l-email').addEventListener('keydown',function(e){if(e.key==='Enter')document.getElementById('l-btn').click()});
+
+  /* ===== FORGOT PASSWORD ===== */
+  document.getElementById('f-btn').addEventListener('click',async function(){
+    var e=document.getElementById('f-email').value.trim(),err=document.getElementById('f-err'),btn=document.getElementById('f-btn');
+    err.textContent='';
+    if(!e){err.textContent='Inserisci la tua email.';return}
+    btn.disabled=true;btn.textContent='Invio in corso...';
+    var r=await sb.auth.resetPasswordForEmail(e,{
+      redirectTo:window.location.origin+window.location.pathname+'#reset-password'
+    });
+    btn.disabled=false;btn.textContent='Invia link di reset';
+    if(r.error){err.textContent=r.error.message}
+    else{err.innerHTML='<span class="ok">Email inviata! Controlla la tua casella di posta e clicca il link per reimpostare la password.</span>'}
+  });
+  document.getElementById('f-email').addEventListener('keydown',function(e){if(e.key==='Enter')document.getElementById('f-btn').click()});
+
+  /* ===== NEW PASSWORD ===== */
+  document.getElementById('np-btn').addEventListener('click',async function(){
+    var p=document.getElementById('np-pass').value,p2=document.getElementById('np-pass2').value;
+    var err=document.getElementById('np-err'),btn=document.getElementById('np-btn');
+    err.textContent='';
+    if(p.length<6){err.textContent='La password deve avere almeno 6 caratteri.';return}
+    if(p!==p2){err.textContent='Le password non coincidono.';return}
+    btn.disabled=true;btn.textContent='Aggiornamento...';
+    var r=await sb.auth.updateUser({password:p});
+    btn.disabled=false;btn.textContent='Aggiorna password';
+    if(r.error){err.textContent=r.error.message}
+    else{err.innerHTML='<span class="ok">Password aggiornata! Reindirizzamento...</span>';setTimeout(function(){show('pg-dash')},1500)}
+  });
+  document.getElementById('np-pass2').addEventListener('keydown',function(e){if(e.key==='Enter')document.getElementById('np-btn').click()});
 
   /* ===== REGISTER ===== */
   document.getElementById('r-btn').addEventListener('click',async function(){
@@ -351,11 +383,40 @@
     if(customer){document.getElementById('d-hotel').textContent=customer.hotel_name||'';document.getElementById('d-name').textContent=customer.contact_person||''}
   }
 
+  /* ===== AUTH STATE: handle recovery flow ===== */
   sb.auth.onAuthStateChange(async function(ev,sess){
-    if(ev==='SIGNED_IN'&&sess){await loadCustomer(sess.user.id);show('pg-dash');initChat()}
+    if(ev==='PASSWORD_RECOVERY'){
+      // User clicked the reset link in the email → show new password form
+      show('pg-newpass');
+      return;
+    }
+    if(ev==='SIGNED_IN'&&sess){
+      await loadCustomer(sess.user.id);
+      // Don't redirect to dash if we're on the new password page
+      var npPage=document.getElementById('pg-newpass');
+      if(!npPage.classList.contains('hide'))return;
+      show('pg-dash');initChat();
+    }
     if(ev==='SIGNED_OUT'){customer=null;show('pg-login')}
   });
-  (async function(){var r=await sb.auth.getSession();if(r.data.session){await loadCustomer(r.data.session.user.id);show('pg-dash');initChat()}else show('pg-login')})();
+
+  // Initial load: check for existing session or recovery hash
+  (async function(){
+    var hash=window.location.hash;
+    // Supabase puts tokens in the hash after email link click
+    // The onAuthStateChange PASSWORD_RECOVERY event handles this
+    var r=await sb.auth.getSession();
+    if(r.data.session){
+      // If hash indicates reset, let onAuthStateChange handle it
+      if(hash&&(hash.indexOf('type=recovery')!==-1||hash.indexOf('reset-password')!==-1)){
+        return; // onAuthStateChange will fire PASSWORD_RECOVERY
+      }
+      await loadCustomer(r.data.session.user.id);
+      show('pg-dash');initChat();
+    }else{
+      show('pg-login');
+    }
+  })();
 
   /* ===== MOBILE CART TOGGLE ===== */
   document.getElementById('cart-mob-toggle').addEventListener('click',function(){
@@ -367,7 +428,6 @@
     document.getElementById('cart-mob-overlay').classList.remove('open');
   });
 
-  /* ===== CLOSE POPOVERS ON OUTSIDE CLICK ===== */
   document.addEventListener('click',function(e){
     if(!e.target.closest('.li-qty-pop')&&!e.target.closest('.li-cart-btn')){
       document.querySelectorAll('.li-qty-pop.open').forEach(function(p){p.classList.remove('open')});
@@ -388,303 +448,46 @@
     return['ordine confermato','ordine inviato','riepilogo ordine','dettaglio ordine','conferma ordine','dati di consegna','dati di fatturazione','totale ordine'].some(function(k){return l.indexOf(k)!==-1});
   }
 
-  /* ===== RENDER ===== */
   function esc(t){var d=document.createElement('div');d.textContent=t;return d.innerHTML}
   function renderUser(t){return esc(t).replace(/\n/g,'<br>')}
 
-  /* =================================================================
-     UNIVERSAL INLINE CART BUTTONS
-     ================================================================= */
+  /* ===== INLINE CART BUTTONS (unchanged from original) ===== */
+  function extractProductFromText(fullText){var text=fullText.replace(/\s+/g,' ').trim();var priceMatch=text.match(/€\s*(\d+[.,]\d{2})/);if(!priceMatch)return null;var price=parseFloat(priceMatch[1].replace(',','.'));var supplier='';var suppParen=text.match(/\(([^)]*?(?:S\.?P\.?A\.?|SPA|SRL|S\.R\.L\.)[^)]*)\)/i);if(!suppParen)suppParen=text.match(/\(([^)]*?(?:Bindi|MARR|Forno|Centrofarc|DORECA|DAC)[^)]*)\)/i);if(suppParen){supplier=suppParen[1].trim()}else{var fm=text.match(/[Ff]ornitore:?\s*([^–—€\n]+)/);if(fm)supplier=fm[1].replace(/[\s\-–—,]+$/,'').trim()}var desc=text;var cutPoints=[suppParen?text.indexOf('('+suppParen[1]+')'):-1,text.toLowerCase().indexOf('fornitore'),text.indexOf('–'),text.indexOf('—'),text.indexOf('€')].filter(function(i){return i>0});var cutAt=cutPoints.length?Math.min.apply(null,cutPoints):text.indexOf('€');if(cutAt>0)desc=text.substring(0,cutAt);desc=desc.replace(/[\s–—\-,:.•]+$/,'').replace(/^[\s•]+/,'').trim();var uom='';var afterPrice=text.substring(text.indexOf(priceMatch[0])+priceMatch[0].length).trim();if(afterPrice)uom=afterPrice.replace(/^[\s,–—\-()]+/,'').replace(/\)$/,'').trim();if(!desc||desc.length<2)return null;return{description:desc,supplier_name:supplier,price:price,selling_uom:uom}}
+  function extractProductFromRow(tr){var cells=tr.querySelectorAll('td');if(!cells.length)return null;var desc='',supplier='',price=null,uom='';cells.forEach(function(td){var t=td.textContent.trim();var pm=t.match(/€\s*(\d+[.,]\d{2})/);if(pm&&price===null){price=parseFloat(pm[1].replace(',','.'));return}if(pm&&price!==null)return;var upperRatio=t.replace(/[^A-ZÀÈÉÌÒÙ]/g,'').length/Math.max(t.length,1);if(!desc&&t.length>3&&upperRatio>0.3){desc=t;return}if(!supplier&&/(?:S\.?P\.?A\.?|SPA|SRL|MARR|DAC|DORECA|Bindi|Forno|Centrofarc)/i.test(t)){supplier=t;return}if(!uom&&t.length>1&&!/prodotto|fornitore|formato|prezzo/i.test(t))uom=t});if(!desc||price===null)return null;return{description:desc,supplier_name:supplier,price:price,selling_uom:uom}}
+  function extractProductFromStructuredLi(li){var subLis=li.querySelectorAll(':scope > ul > li, :scope > ol > li');if(!subLis.length)return null;var desc='';for(var i=0;i<li.childNodes.length;i++){var n=li.childNodes[i];if(n.nodeType===3)desc+=n.textContent;else if(n.nodeName!=='UL'&&n.nodeName!=='OL'&&n.nodeName!=='BUTTON'&&n.nodeName!=='DIV')desc+=n.textContent}desc=desc.replace(/\s+/g,' ').replace(/[\s:–—\-]+$/,'').trim();if(!desc||desc.length<3)return null;var supplier='',price=null,uom='';subLis.forEach(function(s){var t=s.textContent.trim(),tl=t.toLowerCase();if(tl.indexOf('fornitore')===0)supplier=t.replace(/^[Ff]ornitore:?\s*/,'').trim();else if(tl.indexOf('prezzo')===0&&tl.indexOf('unitario')===-1){var pm=t.match(/€\s*(\d+[.,]\d{2})/);if(pm)price=parseFloat(pm[1].replace(',','.'));}else if(tl.indexOf('unit')===0)uom=t.replace(/^[Uu]nit[àa]:?\s*/,'').trim()});if(price===null)return null;return{description:desc,supplier_name:supplier,price:price,selling_uom:uom}}
 
-  function extractProductFromText(fullText){
-    var text=fullText.replace(/\s+/g,' ').trim();
-    var priceMatch=text.match(/€\s*(\d+[.,]\d{2})/);
-    if(!priceMatch)return null;
-    var price=parseFloat(priceMatch[1].replace(',','.'));
-    var supplier='';
-    var suppParen=text.match(/\(([^)]*?(?:S\.?P\.?A\.?|SPA|SRL|S\.R\.L\.)[^)]*)\)/i);
-    if(!suppParen)suppParen=text.match(/\(([^)]*?(?:Bindi|MARR|Forno|Centrofarc|DORECA|DAC)[^)]*)\)/i);
-    if(suppParen){supplier=suppParen[1].trim()}
-    else{var fm=text.match(/[Ff]ornitore:?\s*([^–—€\n]+)/);if(fm)supplier=fm[1].replace(/[\s\-–—,]+$/,'').trim()}
-    var desc=text;
-    var cutPoints=[suppParen?text.indexOf('('+suppParen[1]+')'):-1,text.toLowerCase().indexOf('fornitore'),text.indexOf('–'),text.indexOf('—'),text.indexOf('€')].filter(function(i){return i>0});
-    var cutAt=cutPoints.length?Math.min.apply(null,cutPoints):text.indexOf('€');
-    if(cutAt>0)desc=text.substring(0,cutAt);
-    desc=desc.replace(/[\s–—\-,:.•]+$/,'').replace(/^[\s•]+/,'').trim();
-    var uom='';
-    var afterPrice=text.substring(text.indexOf(priceMatch[0])+priceMatch[0].length).trim();
-    if(afterPrice)uom=afterPrice.replace(/^[\s,–—\-()]+/,'').replace(/\)$/,'').trim();
-    if(!desc||desc.length<2)return null;
-    return{description:desc,supplier_name:supplier,price:price,selling_uom:uom};
-  }
-
-  function extractProductFromRow(tr){
-    var cells=tr.querySelectorAll('td');
-    if(!cells.length)return null;
-    var desc='',supplier='',price=null,uom='';
-    cells.forEach(function(td){
-      var t=td.textContent.trim();
-      var pm=t.match(/€\s*(\d+[.,]\d{2})/);
-      if(pm&&price===null){price=parseFloat(pm[1].replace(',','.'));return}
-      if(pm&&price!==null)return;
-      var upperRatio=t.replace(/[^A-ZÀÈÉÌÒÙ]/g,'').length/Math.max(t.length,1);
-      if(!desc&&t.length>3&&upperRatio>0.3){desc=t;return}
-      if(!supplier&&/(?:S\.?P\.?A\.?|SPA|SRL|MARR|DAC|DORECA|Bindi|Forno|Centrofarc)/i.test(t)){supplier=t;return}
-      if(!uom&&t.length>1&&!/prodotto|fornitore|formato|prezzo/i.test(t))uom=t;
-    });
-    if(!desc||price===null)return null;
-    return{description:desc,supplier_name:supplier,price:price,selling_uom:uom};
-  }
-
-  function extractProductFromStructuredLi(li){
-    var subLis=li.querySelectorAll(':scope > ul > li, :scope > ol > li');
-    if(!subLis.length)return null;
-    var desc='';
-    for(var i=0;i<li.childNodes.length;i++){
-      var n=li.childNodes[i];
-      if(n.nodeType===3)desc+=n.textContent;
-      else if(n.nodeName!=='UL'&&n.nodeName!=='OL'&&n.nodeName!=='BUTTON'&&n.nodeName!=='DIV')desc+=n.textContent;
-    }
-    desc=desc.replace(/\s+/g,' ').replace(/[\s:–—\-]+$/,'').trim();
-    if(!desc||desc.length<3)return null;
-    var supplier='',price=null,uom='';
-    subLis.forEach(function(s){
-      var t=s.textContent.trim(),tl=t.toLowerCase();
-      if(tl.indexOf('fornitore')===0)supplier=t.replace(/^[Ff]ornitore:?\s*/,'').trim();
-      else if(tl.indexOf('prezzo')===0&&tl.indexOf('unitario')===-1){var pm=t.match(/€\s*(\d+[.,]\d{2})/);if(pm)price=parseFloat(pm[1].replace(',','.'));}
-      else if(tl.indexOf('unit')===0)uom=t.replace(/^[Uu]nit[àa]:?\s*/,'').trim();
-    });
-    if(price===null)return null;
-    return{description:desc,supplier_name:supplier,price:price,selling_uom:uom};
-  }
-
-  /* ===== CREATE CART BUTTON + POPOVER (appended to body) ===== */
   var ADD_CART_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/><line x1="12" y1="9" x2="12" y2="15"/><line x1="9" y1="12" x2="15" y2="12"/></svg>';
 
-  function createCartBtn(productData, insertTarget, insertBefore){
-    var pid=productData.id||('p-'+Math.random().toString(36).substr(2,9));
+  function createCartBtn(productData,insertTarget,insertBefore){var pid=productData.id||('p-'+Math.random().toString(36).substr(2,9));var btn=document.createElement('button');btn.className='li-cart-btn';btn.innerHTML=CART_SVG;btn.title='Aggiungi al carrello';var pop=document.createElement('div');pop.className='li-qty-pop';pop.innerHTML='<button class="lqm">−</button><input type="number" class="lqi" value="1" min="1" max="999"><button class="lqp">+</button><button class="pop-cart">'+ADD_CART_SVG+'</button>';document.body.appendChild(pop);btn.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();document.querySelectorAll('.li-qty-pop.open').forEach(function(p){if(p!==pop)p.classList.remove('open')});var r=btn.getBoundingClientRect();pop.style.left=r.left+'px';pop.style.top=(r.bottom+6)+'px';pop.classList.toggle('open')});pop.querySelector('.lqm').addEventListener('click',function(e){e.preventDefault();e.stopPropagation();var inp=pop.querySelector('.lqi');if(parseInt(inp.value)>1)inp.value=parseInt(inp.value)-1});pop.querySelector('.lqp').addEventListener('click',function(e){e.preventDefault();e.stopPropagation();var inp=pop.querySelector('.lqi');inp.value=parseInt(inp.value)+1});pop.querySelector('.pop-cart').addEventListener('click',function(e){e.preventDefault();e.stopPropagation();var qty=parseInt(pop.querySelector('.lqi').value)||1;addToCart({id:pid,description:productData.description||'Prodotto',supplier_name:productData.supplier_name||'',price:parseFloat(productData.price)||0,selling_uom:productData.selling_uom||'',qty:qty});pop.classList.remove('open');btn.innerHTML=CHECK_SVG;btn.classList.add('li-added');setTimeout(function(){btn.innerHTML=CART_SVG;btn.classList.remove('li-added')},1500)});if(insertBefore)insertTarget.insertBefore(btn,insertBefore);else insertTarget.appendChild(btn)}
 
-    var btn=document.createElement('button');
-    btn.className='li-cart-btn';
-    btn.innerHTML=CART_SVG;
-    btn.title='Aggiungi al carrello';
+  function injectInlineCartButtons(msgEl){var body=msgEl.querySelector('.msg-body');if(!body)return;body.querySelectorAll('table tbody tr, table tr').forEach(function(tr){if(tr.querySelector('th'))return;var product=extractProductFromRow(tr);if(!product)return;var lastTd=tr.querySelector('td:last-child');if(lastTd)createCartBtn(product,lastTd,null)});body.querySelectorAll('li').forEach(function(li){if(li.parentElement&&li.parentElement.closest('li'))return;var tl=li.textContent.trim().toLowerCase();if(/^(fornitore|prezzo|unit[àa]|marca|codice|formato)/.test(tl))return;var product=extractProductFromStructuredLi(li);if(!product)product=extractProductFromText(li.textContent);if(!product)return;var subList=li.querySelector(':scope > ul, :scope > ol');createCartBtn(product,li,subList||null)});body.querySelectorAll('p').forEach(function(p){if(p.textContent.indexOf('€')===-1)return;if(p.closest('table, li'))return;var html=p.innerHTML;var lines=html.split(/<br\s*\/?>/i);if(lines.length<=1&&html.indexOf('€')!==-1){var product=extractProductFromText(p.textContent);if(product)createCartBtn(product,p,null);return}var rebuilt=false,newLines=[];for(var i=0;i<lines.length;i++){var tmp=document.createElement('span');tmp.innerHTML=lines[i];var lt=tmp.textContent.trim();if(lt.indexOf('€')!==-1){var prod=extractProductFromText(lt);if(prod){newLines.push('<span class="product-line" data-d="'+esc(prod.description)+'" data-s="'+esc(prod.supplier_name)+'" data-p="'+prod.price+'" data-u="'+esc(prod.selling_uom)+'">'+lines[i]+'</span>');rebuilt=true;continue}}newLines.push(lines[i])}if(rebuilt){p.innerHTML=newLines.join('<br>');p.querySelectorAll('.product-line').forEach(function(span){createCartBtn({description:span.dataset.d,supplier_name:span.dataset.s,price:parseFloat(span.dataset.p)||0,selling_uom:span.dataset.u},span,null)})}})}
 
-    var pop=document.createElement('div');
-    pop.className='li-qty-pop';
-    pop.innerHTML='<button class="lqm">−</button><input type="number" class="lqi" value="1" min="1" max="999"><button class="lqp">+</button><button class="pop-cart">'+ADD_CART_SVG+'</button>';
-    document.body.appendChild(pop);
-
-    btn.addEventListener('click',function(e){
-      e.preventDefault();e.stopPropagation();
-      document.querySelectorAll('.li-qty-pop.open').forEach(function(p){if(p!==pop)p.classList.remove('open')});
-      var r=btn.getBoundingClientRect();
-      pop.style.left=r.left+'px';
-      pop.style.top=(r.bottom+6)+'px';
-      pop.classList.toggle('open');
-    });
-
-    pop.querySelector('.lqm').addEventListener('click',function(e){e.preventDefault();e.stopPropagation();var inp=pop.querySelector('.lqi');if(parseInt(inp.value)>1)inp.value=parseInt(inp.value)-1});
-    pop.querySelector('.lqp').addEventListener('click',function(e){e.preventDefault();e.stopPropagation();var inp=pop.querySelector('.lqi');inp.value=parseInt(inp.value)+1});
-    pop.querySelector('.pop-cart').addEventListener('click',function(e){
-      e.preventDefault();e.stopPropagation();
-      var qty=parseInt(pop.querySelector('.lqi').value)||1;
-      addToCart({id:pid,description:productData.description||'Prodotto',supplier_name:productData.supplier_name||'',price:parseFloat(productData.price)||0,selling_uom:productData.selling_uom||'',qty:qty});
-      pop.classList.remove('open');
-      btn.innerHTML=CHECK_SVG;btn.classList.add('li-added');
-      setTimeout(function(){btn.innerHTML=CART_SVG;btn.classList.remove('li-added')},1500);
-    });
-
-    if(insertBefore)insertTarget.insertBefore(btn,insertBefore);
-    else insertTarget.appendChild(btn);
-  }
-
-  /* ===== MAIN INJECTION ===== */
-  function injectInlineCartButtons(msgEl){
-    var body=msgEl.querySelector('.msg-body');
-    if(!body)return;
-
-    // 1. TABLE ROWS
-    body.querySelectorAll('table tbody tr, table tr').forEach(function(tr){
-      if(tr.querySelector('th'))return;
-      var product=extractProductFromRow(tr);
-      if(!product)return;
-      var lastTd=tr.querySelector('td:last-child');
-      if(lastTd)createCartBtn(product,lastTd,null);
-    });
-
-    // 2. LIST ITEMS (top-level only)
-    body.querySelectorAll('li').forEach(function(li){
-      if(li.parentElement&&li.parentElement.closest('li'))return;
-      var tl=li.textContent.trim().toLowerCase();
-      if(/^(fornitore|prezzo|unit[àa]|marca|codice|formato)/.test(tl))return;
-      var product=extractProductFromStructuredLi(li);
-      if(!product)product=extractProductFromText(li.textContent);
-      if(!product)return;
-      var subList=li.querySelector(':scope > ul, :scope > ol');
-      createCartBtn(product,li,subList||null);
-    });
-
-    // 3. TEXT LINES with • in <p> (bullet char, not real <li>)
-    body.querySelectorAll('p').forEach(function(p){
-      if(p.textContent.indexOf('€')===-1)return;
-      if(p.closest('table, li'))return;
-      var html=p.innerHTML;
-      var lines=html.split(/<br\s*\/?>/i);
-      if(lines.length<=1&&html.indexOf('€')!==-1){
-        var product=extractProductFromText(p.textContent);
-        if(product)createCartBtn(product,p,null);
-        return;
-      }
-      var rebuilt=false,newLines=[];
-      for(var i=0;i<lines.length;i++){
-        var tmp=document.createElement('span');tmp.innerHTML=lines[i];
-        var lt=tmp.textContent.trim();
-        if(lt.indexOf('€')!==-1){
-          var prod=extractProductFromText(lt);
-          if(prod){
-            var lid='pline-'+Math.random().toString(36).substr(2,6);
-            newLines.push('<span class="product-line" data-d="'+esc(prod.description)+'" data-s="'+esc(prod.supplier_name)+'" data-p="'+prod.price+'" data-u="'+esc(prod.selling_uom)+'">'+lines[i]+'</span>');
-            rebuilt=true;continue;
-          }
-        }
-        newLines.push(lines[i]);
-      }
-      if(rebuilt){
-        p.innerHTML=newLines.join('<br>');
-        p.querySelectorAll('.product-line').forEach(function(span){
-          createCartBtn({description:span.dataset.d,supplier_name:span.dataset.s,price:parseFloat(span.dataset.p)||0,selling_uom:span.dataset.u},span,null);
-        });
-      }
-    });
-  }
-
-  function addMsg(role,text,products){
-    var el=document.getElementById('msgs'),d=document.createElement('div');d.className='msg';
-    var isU=role==='user';
-    d.innerHTML='<div class="msg-head"><div class="msg-icon '+(isU?'u':'b')+'">'+(isU?'Tu':'HS')+'</div><div class="msg-label '+(isU?'u':'b')+'">'+(isU?'Tu':'Hotel Supply Pro')+'</div></div><div class="msg-body">'+(isU?renderUser(text):marked.parse(text))+'</div>';
-    if(!isU)injectInlineCartButtons(d);
-    el.appendChild(d);
-    document.getElementById('msg-area').scrollTop=document.getElementById('msg-area').scrollHeight;
-  }
+  function addMsg(role,text,products){var el=document.getElementById('msgs'),d=document.createElement('div');d.className='msg';var isU=role==='user';d.innerHTML='<div class="msg-head"><div class="msg-icon '+(isU?'u':'b')+'">'+(isU?'Tu':'HS')+'</div><div class="msg-label '+(isU?'u':'b')+'">'+(isU?'Tu':'Hotel Supply Pro')+'</div></div><div class="msg-body">'+(isU?renderUser(text):marked.parse(text))+'</div>';if(!isU)injectInlineCartButtons(d);el.appendChild(d);document.getElementById('msg-area').scrollTop=document.getElementById('msg-area').scrollHeight}
   function showTyping(){var el=document.getElementById('msgs'),d=document.createElement('div');d.className='msg';d.id='tp';d.innerHTML='<div class="msg-head"><div class="msg-icon b">HS</div><div class="msg-label b">Hotel Supply Pro</div></div><div class="msg-body typing-dots"><span></span><span></span><span></span></div>';el.appendChild(d);document.getElementById('msg-area').scrollTop=document.getElementById('msg-area').scrollHeight}
   function hideTyping(){var t=document.getElementById('tp');if(t)t.remove()}
 
-  function initChat(){
-    document.getElementById('msgs').innerHTML='';sessId=crypto.randomUUID();
-    var name=customer?(customer.contact_person||'').split(' ')[0]:'';
-    addMsg('bot',(name?'Ciao **'+name+'**!':'Ciao!')+'\n\nSono il tuo assistente per gli acquisti. Posso cercare prodotti, confrontare prezzi e gestire il tuo carrello.\n\nCosa posso fare per te?');
-    var el=document.getElementById('msgs'),chips=document.createElement('div');chips.className='chips';chips.id='chps';
-    ['Che prosecco avete?','Prodotti per la colazione','Detersivi per la cucina','Confronta prezzi Coca Cola'].forEach(function(t){
-      var c=document.createElement('span');c.className='chip';c.textContent=t;
-      c.addEventListener('click',function(){chips.remove();doSend(t)});chips.appendChild(c);
-    });
-    el.appendChild(chips);document.getElementById('cin').focus();
-  }
+  function initChat(){document.getElementById('msgs').innerHTML='';sessId=crypto.randomUUID();var name=customer?(customer.contact_person||'').split(' ')[0]:'';addMsg('bot',(name?'Ciao **'+name+'**!':'Ciao!')+'\n\nSono il tuo assistente per gli acquisti. Posso cercare prodotti, confrontare prezzi e gestire il tuo carrello.\n\nCosa posso fare per te?');var el=document.getElementById('msgs'),chips=document.createElement('div');chips.className='chips';chips.id='chps';['Che prosecco avete?','Prodotti per la colazione','Detersivi per la cucina','Confronta prezzi Coca Cola'].forEach(function(t){var c=document.createElement('span');c.className='chip';c.textContent=t;c.addEventListener('click',function(){chips.remove();doSend(t)});chips.appendChild(c)});el.appendChild(chips);document.getElementById('cin').focus()}
 
-  /* ===== SEND ===== */
-  function cartSummary(){
-    if(!cart.length)return'Il carrello è vuoto.';
-    return'Carrello attuale:\n'+cart.map(function(c){return c.qty+'x '+c.description+' ('+c.supplier_name+', €'+(c.price||0).toFixed(2)+') [id:'+c.id+']'}).join('\n');
-  }
+  function cartSummary(){if(!cart.length)return'Il carrello è vuoto.';return'Carrello attuale:\n'+cart.map(function(c){return c.qty+'x '+c.description+' ('+c.supplier_name+', €'+(c.price||0).toFixed(2)+') [id:'+c.id+']'}).join('\n')}
 
-  async function doSend(text){
-    if(busy)return;
-    if(!text){text=document.getElementById('cin').value.trim();document.getElementById('cin').value=''}
-    if(!text)return;
-    var ch=document.getElementById('chps');if(ch)ch.remove();
-    addMsg('user',text);busy=true;document.getElementById('btn-send').disabled=true;showTyping();
-    try{
-      var res=await fetch(N8N,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chatInput:text,sessionId:sessId,customerId:customer?customer.id:'',customerName:customer?(customer.contact_person||''):'',hotelName:customer?(customer.hotel_name||''):'',companyName:customer?(customer.company_name||''):'',cartState:cartSummary()})});
-      hideTyping();var data=await res.json();
-      var raw=typeof data==='string'?data:(data.output||data.text||data.response||data.message||JSON.stringify(data));
-      var p=parseResponse(raw);
-      if(p.cartActions.length)applyCartActions(p.cartActions);
-      addMsg('bot',p.text,p.products);
-    }catch(e){hideTyping();addMsg('bot','Errore di comunicazione. Riprova.')}
-    busy=false;document.getElementById('btn-send').disabled=false;document.getElementById('cin').focus();
-  }
+  async function doSend(text){if(busy)return;if(!text){text=document.getElementById('cin').value.trim();document.getElementById('cin').value=''}if(!text)return;var ch=document.getElementById('chps');if(ch)ch.remove();addMsg('user',text);busy=true;document.getElementById('btn-send').disabled=true;showTyping();try{var res=await fetch(N8N,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chatInput:text,sessionId:sessId,customerId:customer?customer.id:'',customerName:customer?(customer.contact_person||''):'',hotelName:customer?(customer.hotel_name||''):'',companyName:customer?(customer.company_name||''):'',cartState:cartSummary()})});hideTyping();var data=await res.json();var raw=typeof data==='string'?data:(data.output||data.text||data.response||data.message||JSON.stringify(data));var p=parseResponse(raw);if(p.cartActions.length)applyCartActions(p.cartActions);addMsg('bot',p.text,p.products)}catch(e){hideTyping();addMsg('bot','Errore di comunicazione. Riprova.')}busy=false;document.getElementById('btn-send').disabled=false;document.getElementById('cin').focus()}
 
   document.getElementById('btn-send').addEventListener('click',function(){doSend()});
   document.getElementById('cin').addEventListener('keydown',function(e){if(e.key==='Enter')doSend()});
   document.getElementById('btn-new').addEventListener('click',function(){initChat()});
 
   /* ===== CART ===== */
-  function addToCart(item){
-    var ex=cart.find(function(c){return c.id===item.id});
-    if(ex){ex.qty+=item.qty}else{cart.push({id:item.id,description:item.description,supplier_name:item.supplier_name,price:item.price,selling_uom:item.selling_uom,qty:item.qty})}
-    renderCartSidebar(item.id);
-  }
+  function addToCart(item){var ex=cart.find(function(c){return c.id===item.id});if(ex){ex.qty+=item.qty}else{cart.push({id:item.id,description:item.description,supplier_name:item.supplier_name,price:item.price,selling_uom:item.selling_uom,qty:item.qty})}renderCartSidebar(item.id)}
   function removeFromCart(id){cart=cart.filter(function(c){return c.id!==id});renderCartSidebar()}
   function updateQty(id,qty){var it=cart.find(function(c){return c.id===id});if(it){if(qty<1)removeFromCart(id);else{it.qty=qty;renderCartSidebar(id)}}}
 
-  function applyCartActions(actions){
-    actions.forEach(function(a){
-      if(a.action==='add'&&a.id){
-        var ex=cart.find(function(c){return c.id===a.id});
-        if(ex){ex.qty+=(parseInt(a.qty)||1)}else{cart.push({id:a.id,description:a.description||'Prodotto',supplier_name:a.supplier_name||'',price:parseFloat(a.price)||0,selling_uom:a.selling_uom||'',qty:parseInt(a.qty)||1})}
-      }else if(a.action==='remove'){cart=cart.filter(function(c){return c.id!==a.id})}
-      else if(a.action==='update_qty'&&a.id){var it=cart.find(function(c){return c.id===a.id});if(it)it.qty=Math.max(1,parseInt(a.qty)||1)}
-      else if(a.action==='clear'){cart=[]}
-    });
-    renderCartSidebar();
-  }
+  function applyCartActions(actions){actions.forEach(function(a){if(a.action==='add'&&a.id){var ex=cart.find(function(c){return c.id===a.id});if(ex){ex.qty+=(parseInt(a.qty)||1)}else{cart.push({id:a.id,description:a.description||'Prodotto',supplier_name:a.supplier_name||'',price:parseFloat(a.price)||0,selling_uom:a.selling_uom||'',qty:parseInt(a.qty)||1})}}else if(a.action==='remove'){cart=cart.filter(function(c){return c.id!==a.id})}else if(a.action==='update_qty'&&a.id){var it=cart.find(function(c){return c.id===a.id});if(it)it.qty=Math.max(1,parseInt(a.qty)||1)}else if(a.action==='clear'){cart=[]}});renderCartSidebar()}
 
-  /* ===== RENDER CART SIDEBAR (live) ===== */
-  function renderCartSidebar(flashId){
-    var el=document.getElementById('cart-items');
-    var cnt=cart.reduce(function(s,c){return s+c.qty},0);
-    var total=cart.reduce(function(s,c){return s+c.price*c.qty},0);
+  function renderCartSidebar(flashId){var el=document.getElementById('cart-items');var cnt=cart.reduce(function(s,c){return s+c.qty},0);var total=cart.reduce(function(s,c){return s+c.price*c.qty},0);var cntEl=document.getElementById('cart-count');cntEl.textContent=cnt;cntEl.className='cart-count'+(cnt===0?' z':'');document.getElementById('cart-total').textContent='€'+total.toFixed(2).replace('.',',');document.getElementById('cart-send').disabled=cart.length===0;var mob=document.getElementById('cart-badge-mob');if(cnt>0){mob.textContent=cnt;mob.classList.remove('hide')}else{mob.classList.add('hide')}if(!cart.length){el.innerHTML='<div class="cart-sb-empty"><div class="cart-empty-icon">🛒</div>Il carrello è vuoto.<br>Cerca prodotti e aggiungili qui.</div>';return}var h='';cart.forEach(function(c){var flash=flashId===c.id?' csi-flash':'';h+='<div class="csi'+flash+'" data-id="'+c.id+'">';h+='<div class="csi-info"><div class="csi-name">'+esc(c.description)+'</div><div class="csi-det">'+esc(c.supplier_name)+' · '+esc(c.selling_uom)+'</div><div class="csi-price">€'+(c.price*c.qty).toFixed(2).replace('.',',')+'</div></div>';h+='<div class="csi-q"><button class="cq-m" data-id="'+c.id+'">−</button><span>'+c.qty+'</span><button class="cq-p" data-id="'+c.id+'">+</button></div>';h+='<button class="csi-rm" data-id="'+c.id+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>';h+='</div>'});el.innerHTML=h;if(flashId){setTimeout(function(){var f=el.querySelector('.csi-flash');if(f)f.classList.remove('csi-flash')},400)}el.querySelectorAll('.cq-m').forEach(function(b){b.addEventListener('click',function(){var it=cart.find(function(c){return c.id===b.dataset.id});if(it)updateQty(b.dataset.id,it.qty-1)})});el.querySelectorAll('.cq-p').forEach(function(b){b.addEventListener('click',function(){var it=cart.find(function(c){return c.id===b.dataset.id});if(it)updateQty(b.dataset.id,it.qty+1)})});el.querySelectorAll('.csi-rm').forEach(function(b){b.addEventListener('click',function(){removeFromCart(b.dataset.id)})})}
 
-    // Update counters
-    var cntEl=document.getElementById('cart-count');
-    cntEl.textContent=cnt;
-    cntEl.className='cart-count'+(cnt===0?' z':'');
-    document.getElementById('cart-total').textContent='€'+total.toFixed(2).replace('.',',');
-    document.getElementById('cart-send').disabled=cart.length===0;
+  document.getElementById('cart-send').addEventListener('click',function(){if(!cart.length)return;var msg='Vorrei ordinare:\n';cart.forEach(function(c){msg+='- '+c.qty+'x '+c.description+' ('+c.supplier_name+', €'+(c.price||0).toFixed(2).replace('.',',')+')\n'});document.getElementById('cart-sb').classList.remove('open');document.getElementById('cart-mob-overlay').classList.remove('open');doSend(msg)});
 
-    // Mobile badge
-    var mob=document.getElementById('cart-badge-mob');
-    if(cnt>0){mob.textContent=cnt;mob.classList.remove('hide')}else{mob.classList.add('hide')}
-
-    if(!cart.length){
-      el.innerHTML='<div class="cart-sb-empty"><div class="cart-empty-icon">🛒</div>Il carrello è vuoto.<br>Cerca prodotti e aggiungili qui.</div>';
-      return;
-    }
-
-    var h='';
-    cart.forEach(function(c){
-      var flash=flashId===c.id?' csi-flash':'';
-      h+='<div class="csi'+flash+'" data-id="'+c.id+'">';
-      h+='<div class="csi-info"><div class="csi-name">'+esc(c.description)+'</div><div class="csi-det">'+esc(c.supplier_name)+' · '+esc(c.selling_uom)+'</div><div class="csi-price">€'+(c.price*c.qty).toFixed(2).replace('.',',')+'</div></div>';
-      h+='<div class="csi-q"><button class="cq-m" data-id="'+c.id+'">−</button><span>'+c.qty+'</span><button class="cq-p" data-id="'+c.id+'">+</button></div>';
-      h+='<button class="csi-rm" data-id="'+c.id+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>';
-      h+='</div>';
-    });
-    el.innerHTML=h;
-
-    // Remove flash after animation
-    if(flashId){setTimeout(function(){var f=el.querySelector('.csi-flash');if(f)f.classList.remove('csi-flash')},400)}
-
-    // Bind sidebar buttons
-    el.querySelectorAll('.cq-m').forEach(function(b){b.addEventListener('click',function(){var it=cart.find(function(c){return c.id===b.dataset.id});if(it)updateQty(b.dataset.id,it.qty-1)})});
-    el.querySelectorAll('.cq-p').forEach(function(b){b.addEventListener('click',function(){var it=cart.find(function(c){return c.id===b.dataset.id});if(it)updateQty(b.dataset.id,it.qty+1)})});
-    el.querySelectorAll('.csi-rm').forEach(function(b){b.addEventListener('click',function(){removeFromCart(b.dataset.id)})});
-  }
-
-  // Send order via chat
-  document.getElementById('cart-send').addEventListener('click',function(){
-    if(!cart.length)return;
-    var msg='Vorrei ordinare:\n';
-    cart.forEach(function(c){msg+='- '+c.qty+'x '+c.description+' ('+c.supplier_name+', €'+(c.price||0).toFixed(2).replace('.',',')+')\n'});
-    // Close mobile sidebar if open
-    document.getElementById('cart-sb').classList.remove('open');
-    document.getElementById('cart-mob-overlay').classList.remove('open');
-    doSend(msg);
-  });
-
-  // Initial render
   renderCartSidebar();
-
 })();
 </script>
 </body>
