@@ -202,6 +202,52 @@
       .cart-sb{position:fixed;top:52px;right:-320px;bottom:0;z-index:50;width:300px;max-width:85vw;box-shadow:-4px 0 20px rgba(0,0,0,.2);transition:right .25s ease}
       .cart-sb.open{right:0}
     }
+
+    /* ===== ORDERS PAGE ===== */
+    .orders-page{flex:1;overflow-y:auto;padding:1.5rem}
+    .orders-inner{max-width:800px;margin:0 auto}
+    .orders-title{font-size:1.15rem;font-weight:700;margin-bottom:1rem;display:flex;align-items:center;gap:.5rem}
+    .orders-title .back-btn{background:none;border:1px solid var(--border);border-radius:8px;padding:.3rem .6rem;cursor:pointer;color:var(--text2);font-size:.8rem;font-family:inherit;display:none;transition:all .15s}
+    .orders-title .back-btn:hover{border-color:var(--accent);color:var(--accent)}
+    .orders-empty{text-align:center;color:var(--text3);padding:3rem 1rem;font-size:.9rem}
+    .order-row{display:flex;align-items:center;justify-content:space-between;padding:.85rem 1rem;border:1px solid var(--card-border);border-radius:12px;margin-bottom:.5rem;background:var(--card-bg);cursor:pointer;transition:all .15s}
+    .order-row:hover{border-color:var(--accent);background:var(--accent-s)}
+    .or-left{min-width:0}
+    .or-num{font-size:.9rem;font-weight:700}.or-num span{color:var(--accent)}
+    .or-date{font-size:.75rem;color:var(--text3);margin-top:.1rem}
+    .or-hotel{font-size:.75rem;color:var(--text2);margin-top:.1rem}
+    .or-right{text-align:right;flex-shrink:0}
+    .or-total{font-size:.95rem;font-weight:700;color:var(--accent)}
+    .or-status{font-size:.68rem;font-weight:600;text-transform:uppercase;letter-spacing:.04em;padding:.15rem .5rem;border-radius:6px;margin-top:.2rem;display:inline-block}
+    .or-status.s-pending{background:#fef3c7;color:#92400e}
+    .or-status.s-confirmed{background:#d1fae5;color:#065f46}
+    .or-status.s-shipped{background:#dbeafe;color:#1e40af}
+    .or-status.s-delivered{background:#d1fae5;color:#065f46}
+    .or-status.s-cancelled{background:#fee2e2;color:#991b1b}
+    @media(prefers-color-scheme:dark){
+      .or-status.s-pending{background:rgba(254,243,199,.15);color:#fbbf24}
+      .or-status.s-confirmed{background:rgba(209,250,229,.15);color:#34d399}
+      .or-status.s-shipped{background:rgba(219,234,254,.15);color:#60a5fa}
+      .or-status.s-delivered{background:rgba(209,250,229,.15);color:#34d399}
+      .or-status.s-cancelled{background:rgba(254,226,226,.15);color:#f87171}
+    }
+
+    /* Order detail */
+    .od-section{margin-bottom:1.25rem}
+    .od-section h4{font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);margin-bottom:.4rem}
+    .od-info{font-size:.85rem;color:var(--text2);line-height:1.6}
+    .od-items-table{width:100%;border-collapse:collapse;font-size:.85rem;margin-top:.3rem}
+    .od-items-table th{text-align:left;font-weight:600;padding:.5rem .6rem;background:var(--bg2);border-bottom:1px solid var(--border);font-size:.75rem;text-transform:uppercase;letter-spacing:.04em;color:var(--text2)}
+    .od-items-table td{padding:.5rem .6rem;border-bottom:1px solid var(--border)}
+    .od-items-table tr:last-child td{border-bottom:none}
+    .od-total-row{font-weight:700}
+    .od-total-row td{border-top:2px solid var(--border)!important;padding-top:.7rem}
+
+    /* Nav tabs in header */
+    .nav-tabs{display:flex;gap:.15rem;margin-left:.75rem}
+    .nav-tab{padding:.35rem .7rem;border-radius:8px;font-size:.78rem;font-weight:600;cursor:pointer;color:var(--text3);background:transparent;border:none;font-family:inherit;transition:all .15s}
+    .nav-tab:hover{color:var(--text);background:var(--bg-hover)}
+    .nav-tab.active{color:var(--accent);background:var(--accent-s)}
   </style>
 </head>
 <body>
@@ -251,6 +297,10 @@
       <div style="display:flex;align-items:center">
         <div class="logo">Hotel Supply <span>Pro</span></div>
         <span class="hotel-tag" id="d-hotel"></span>
+        <div class="nav-tabs">
+          <button class="nav-tab active" id="nav-chat">Chat</button>
+          <button class="nav-tab" id="nav-orders">I miei ordini</button>
+        </div>
       </div>
       <div class="dash-right">
         <span class="user-name" id="d-name"></span>
@@ -265,7 +315,7 @@
 
     <div class="dash-body">
       <!-- Chat -->
-      <div class="chat-col">
+      <div class="chat-col" id="view-chat">
         <div class="messages-area" id="msg-area">
           <div class="messages-inner" id="msgs"></div>
         </div>
@@ -276,6 +326,11 @@
           </div>
           <div class="disclaimer">Hotel Supply Pro può commettere errori. Verifica le informazioni importanti.</div>
         </div>
+      </div>
+
+      <!-- Orders page -->
+      <div class="orders-page hide" id="view-orders">
+        <div class="orders-inner" id="orders-content"></div>
       </div>
 
       <!-- Cart Sidebar (always visible on desktop) -->
@@ -536,188 +591,3 @@
         return;
       }
       var rebuilt=false,newLines=[];
-      for(var i=0;i<lines.length;i++){
-        var tmp=document.createElement('span');tmp.innerHTML=lines[i];
-        var lt=tmp.textContent.trim();
-        if(lt.indexOf('€')!==-1){
-          var prod=extractProductFromText(lt);
-          if(prod){
-            var lid='pline-'+Math.random().toString(36).substr(2,6);
-            newLines.push('<span class="product-line" data-d="'+esc(prod.description)+'" data-s="'+esc(prod.supplier_name)+'" data-p="'+prod.price+'" data-u="'+esc(prod.selling_uom)+'">'+lines[i]+'</span>');
-            rebuilt=true;continue;
-          }
-        }
-        newLines.push(lines[i]);
-      }
-      if(rebuilt){
-        p.innerHTML=newLines.join('<br>');
-        p.querySelectorAll('.product-line').forEach(function(span){
-          createCartBtn({description:span.dataset.d,supplier_name:span.dataset.s,price:parseFloat(span.dataset.p)||0,selling_uom:span.dataset.u},span,null);
-        });
-      }
-    });
-  }
-
-  function addMsg(role,text,products){
-    var el=document.getElementById('msgs'),d=document.createElement('div');d.className='msg';
-    var isU=role==='user';
-    d.innerHTML='<div class="msg-head"><div class="msg-icon '+(isU?'u':'b')+'">'+(isU?'Tu':'HS')+'</div><div class="msg-label '+(isU?'u':'b')+'">'+(isU?'Tu':'Hotel Supply Pro')+'</div></div><div class="msg-body">'+(isU?renderUser(text):marked.parse(text))+'</div>';
-    if(!isU)injectInlineCartButtons(d);
-    el.appendChild(d);
-    document.getElementById('msg-area').scrollTop=document.getElementById('msg-area').scrollHeight;
-  }
-  function showTyping(){var el=document.getElementById('msgs'),d=document.createElement('div');d.className='msg';d.id='tp';d.innerHTML='<div class="msg-head"><div class="msg-icon b">HS</div><div class="msg-label b">Hotel Supply Pro</div></div><div class="msg-body typing-dots"><span></span><span></span><span></span></div>';el.appendChild(d);document.getElementById('msg-area').scrollTop=document.getElementById('msg-area').scrollHeight}
-  function hideTyping(){var t=document.getElementById('tp');if(t)t.remove()}
-
-  function initChat(){
-    document.getElementById('msgs').innerHTML='';sessId=crypto.randomUUID();
-    var name=customer?(customer.contact_person||'').split(' ')[0]:'';
-    addMsg('bot',(name?'Ciao **'+name+'**!':'Ciao!')+'\n\nSono il tuo assistente per gli acquisti. Posso cercare prodotti, confrontare prezzi e gestire il tuo carrello.\n\nCosa posso fare per te?');
-    var el=document.getElementById('msgs'),chips=document.createElement('div');chips.className='chips';chips.id='chps';
-    ['Che prosecco avete?','Prodotti per la colazione','Detersivi per la cucina','Confronta prezzi Coca Cola'].forEach(function(t){
-      var c=document.createElement('span');c.className='chip';c.textContent=t;
-      c.addEventListener('click',function(){chips.remove();doSend(t)});chips.appendChild(c);
-    });
-    el.appendChild(chips);document.getElementById('cin').focus();
-  }
-
-  /* ===== SEND ===== */
-
-  async function doSend(text){
-    if(busy)return;
-    if(!text){text=document.getElementById('cin').value.trim();document.getElementById('cin').value=''}
-    if(!text)return;
-    var ch=document.getElementById('chps');if(ch)ch.remove();
-    addMsg('user',text);busy=true;document.getElementById('btn-send').disabled=true;showTyping();
-    // Flush cart to Supabase before sending so agent reads fresh data
-    if(syncTimer)clearTimeout(syncTimer);syncTimer=null;
-    if(customer&&customer.id){try{await sb.from('cart_sessions').upsert({customer_id:customer.id,session_id:sessId,items:cart,updated_at:new Date().toISOString()},{onConflict:'customer_id,session_id'})}catch(e){}}
-    try{
-      var res=await fetch(N8N,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chatInput:text,sessionId:sessId,customerId:customer?customer.id:'',customerName:customer?(customer.contact_person||''):'',hotelName:customer?(customer.hotel_name||''):'',companyName:customer?(customer.company_name||''):''})}); 
-      hideTyping();var data=await res.json();
-      var raw=typeof data==='string'?data:(data.output||data.text||data.response||data.message||JSON.stringify(data));
-      var p=parseResponse(raw);
-      if(p.cartActions.length)applyCartActions(p.cartActions);
-      addMsg('bot',p.text,p.products);
-    }catch(e){hideTyping();addMsg('bot','Errore di comunicazione. Riprova.')}
-    busy=false;document.getElementById('btn-send').disabled=false;document.getElementById('cin').focus();
-  }
-
-  document.getElementById('btn-send').addEventListener('click',function(){doSend()});
-  document.getElementById('cin').addEventListener('keydown',function(e){if(e.key==='Enter')doSend()});
-  document.getElementById('btn-new').addEventListener('click',function(){initChat()});
-
-  /* ===== CART + SUPABASE SYNC ===== */
-  var syncTimer=null;
-
-  // Debounced sync: writes cart to Supabase cart_sessions
-  function syncCart(){
-    if(syncTimer)clearTimeout(syncTimer);
-    syncTimer=setTimeout(async function(){
-      if(!customer||!customer.id)return;
-      try{
-        var r=await sb.from('cart_sessions').upsert({
-          customer_id:customer.id,
-          session_id:sessId,
-          items:cart,
-          updated_at:new Date().toISOString()
-        },{onConflict:'customer_id,session_id'});
-        if(r.error)console.error('syncCart error:',r.error.message);
-      }catch(e){console.error('syncCart exception:',e)}
-    },300);
-  }
-
-  // Load cart from Supabase (on page reload / session restore)
-  async function loadCart(){
-    if(!customer||!customer.id)return;
-    try{
-      var r=await sb.from('cart_sessions').select('items').eq('customer_id',customer.id).eq('session_id',sessId).maybeSingle();
-      if(r.data&&Array.isArray(r.data.items)&&r.data.items.length){
-        cart=r.data.items;
-        renderCartSidebar();
-      }
-    }catch(e){console.error('loadCart:',e)}
-  }
-
-  function addToCart(item){
-    var ex=cart.find(function(c){return c.id===item.id});
-    if(ex){ex.qty+=item.qty}else{cart.push({id:item.id,description:item.description,supplier_name:item.supplier_name,price:item.price,selling_uom:item.selling_uom,qty:item.qty})}
-    renderCartSidebar(item.id);
-    syncCart();
-  }
-  function removeFromCart(id){cart=cart.filter(function(c){return c.id!==id});renderCartSidebar();syncCart()}
-  function updateQty(id,qty){var it=cart.find(function(c){return c.id===id});if(it){if(qty<1)removeFromCart(id);else{it.qty=qty;renderCartSidebar(id);syncCart()}}}
-
-  function applyCartActions(actions){
-    actions.forEach(function(a){
-      if(a.action==='add'&&a.id){
-        var ex=cart.find(function(c){return c.id===a.id});
-        if(ex){ex.qty+=(parseInt(a.qty)||1)}else{cart.push({id:a.id,description:a.description||'Prodotto',supplier_name:a.supplier_name||'',price:parseFloat(a.price)||0,selling_uom:a.selling_uom||'',qty:parseInt(a.qty)||1})}
-      }else if(a.action==='remove'){cart=cart.filter(function(c){return c.id!==a.id})}
-      else if(a.action==='update_qty'&&a.id){var it=cart.find(function(c){return c.id===a.id});if(it)it.qty=Math.max(1,parseInt(a.qty)||1)}
-      else if(a.action==='clear'){cart=[]}
-    });
-    renderCartSidebar();
-    syncCart();
-  }
-
-  /* ===== RENDER CART SIDEBAR (live) ===== */
-  function renderCartSidebar(flashId){
-    var el=document.getElementById('cart-items');
-    var cnt=cart.reduce(function(s,c){return s+c.qty},0);
-    var total=cart.reduce(function(s,c){return s+c.price*c.qty},0);
-
-    // Update counters
-    var cntEl=document.getElementById('cart-count');
-    cntEl.textContent=cnt;
-    cntEl.className='cart-count'+(cnt===0?' z':'');
-    document.getElementById('cart-total').textContent='€'+total.toFixed(2).replace('.',',');
-    document.getElementById('cart-send').disabled=cart.length===0;
-
-    // Mobile badge
-    var mob=document.getElementById('cart-badge-mob');
-    if(cnt>0){mob.textContent=cnt;mob.classList.remove('hide')}else{mob.classList.add('hide')}
-
-    if(!cart.length){
-      el.innerHTML='<div class="cart-sb-empty"><div class="cart-empty-icon">🛒</div>Il carrello è vuoto.<br>Cerca prodotti e aggiungili qui.</div>';
-      return;
-    }
-
-    var h='';
-    cart.forEach(function(c){
-      var flash=flashId===c.id?' csi-flash':'';
-      h+='<div class="csi'+flash+'" data-id="'+c.id+'">';
-      h+='<div class="csi-info"><div class="csi-name">'+esc(c.description)+'</div><div class="csi-det">'+esc(c.supplier_name)+' · '+esc(c.selling_uom)+'</div><div class="csi-price">€'+(c.price*c.qty).toFixed(2).replace('.',',')+'</div></div>';
-      h+='<div class="csi-q"><button class="cq-m" data-id="'+c.id+'">−</button><span>'+c.qty+'</span><button class="cq-p" data-id="'+c.id+'">+</button></div>';
-      h+='<button class="csi-rm" data-id="'+c.id+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>';
-      h+='</div>';
-    });
-    el.innerHTML=h;
-
-    // Remove flash after animation
-    if(flashId){setTimeout(function(){var f=el.querySelector('.csi-flash');if(f)f.classList.remove('csi-flash')},400)}
-
-    // Bind sidebar buttons
-    el.querySelectorAll('.cq-m').forEach(function(b){b.addEventListener('click',function(){var it=cart.find(function(c){return c.id===b.dataset.id});if(it)updateQty(b.dataset.id,it.qty-1)})});
-    el.querySelectorAll('.cq-p').forEach(function(b){b.addEventListener('click',function(){var it=cart.find(function(c){return c.id===b.dataset.id});if(it)updateQty(b.dataset.id,it.qty+1)})});
-    el.querySelectorAll('.csi-rm').forEach(function(b){b.addEventListener('click',function(){removeFromCart(b.dataset.id)})});
-  }
-
-  // Send order via chat
-  document.getElementById('cart-send').addEventListener('click',function(){
-    if(!cart.length)return;
-    var msg='Vorrei ordinare:\n';
-    cart.forEach(function(c){msg+='- '+c.qty+'x '+c.description+' ('+c.supplier_name+', €'+(c.price||0).toFixed(2).replace('.',',')+')\n'});
-    // Close mobile sidebar if open
-    document.getElementById('cart-sb').classList.remove('open');
-    document.getElementById('cart-mob-overlay').classList.remove('open');
-    doSend(msg);
-  });
-
-  // Initial render
-  renderCartSidebar();
-
-})();
-</script>
-</body>
-</html>
