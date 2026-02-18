@@ -280,7 +280,7 @@
 <body>
 
 <!-- LOGIN -->
-<div id="pg-login" class="auth-page hide">
+<div id="pg-login" class="auth-page">
   <div class="auth-box">
     <div class="auth-logo"><h1>Hotel Supply <span>Pro</span></h1><p>Accedi al tuo account</p></div>
     <div class="auth-card">
@@ -902,3 +902,83 @@
       addMsg('bot','Errore nell\'invio dell\'ordine: '+(e.message||e)+'. Riprova.');
     }
     btnC.disabled=false;btnM.disabled=false;btnC.textContent='✅ Conferma ordine';
+  });
+
+  // Initial render
+  renderCartSidebar();
+
+  /* ===== PAGE NAVIGATION ===== */
+  var currentView='chat';
+  function showView(view){
+    currentView=view;
+    document.getElementById('view-chat').classList.toggle('hide',view!=='chat');
+    document.getElementById('view-orders').classList.toggle('hide',view!=='orders');
+    document.getElementById('cart-sb').style.display=view==='chat'?'':'none';
+    document.querySelectorAll('.nav-tab').forEach(function(t){t.classList.remove('active')});
+    document.getElementById('nav-'+view).classList.add('active');
+    if(view==='orders')loadOrders();
+  }
+  document.getElementById('nav-chat').addEventListener('click',function(){showView('chat')});
+  document.getElementById('nav-orders').addEventListener('click',function(){showView('orders')});
+
+  /* ===== ORDERS PAGE ===== */
+  var STATUS_LABELS={pending:'In attesa',confirmed:'Confermato',shipped:'Spedito',delivered:'Consegnato',cancelled:'Annullato'};
+
+  function fmtDate(d){
+    var dt=new Date(d);
+    return dt.toLocaleDateString('it-IT',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  }
+  function fmtPrice(n){return '€'+(n||0).toFixed(2).replace('.',',')}
+
+  async function loadOrders(){
+    var el=document.getElementById('orders-content');
+    el.innerHTML='<div class="orders-title">📦 I miei ordini</div><div style="text-align:center;padding:2rem;color:var(--text3)">Caricamento...</div>';
+    if(!customer){el.innerHTML='<div class="orders-empty">Effettua il login per vedere i tuoi ordini.</div>';return}
+    var r=await sb.from('orders').select('*').eq('customer_id',customer.id).order('created_at',{ascending:false});
+    if(r.error){el.innerHTML='<div class="orders-empty">Errore nel caricamento degli ordini.</div>';return}
+    if(!r.data||!r.data.length){el.innerHTML='<div class="orders-title">📦 I miei ordini</div><div class="orders-empty">Non hai ancora effettuato ordini.<br>Cerca prodotti nella chat e invia il tuo primo ordine!</div>';return}
+    var h='<div class="orders-title">📦 I miei ordini</div>';
+    r.data.forEach(function(o){
+      h+='<div class="order-row" data-oid="'+o.id+'">';
+      h+='<div class="or-left"><div class="or-num">Ordine <span>#'+o.order_number+'</span></div><div class="or-date">'+fmtDate(o.created_at)+'</div><div class="or-hotel">'+esc(o.delivery_hotel||'')+'</div></div>';
+      h+='<div class="or-right"><div class="or-total">'+fmtPrice(o.total)+'</div><div class="or-status s-'+o.status+'">'+STATUS_LABELS[o.status]+'</div></div>';
+      h+='</div>';
+    });
+    el.innerHTML=h;
+    el.querySelectorAll('.order-row').forEach(function(row){
+      row.addEventListener('click',function(){loadOrderDetail(row.dataset.oid)});
+    });
+  }
+
+  async function loadOrderDetail(orderId){
+    var el=document.getElementById('orders-content');
+    el.innerHTML='<div style="text-align:center;padding:2rem;color:var(--text3)">Caricamento dettaglio...</div>';
+    var or=await sb.from('orders').select('*').eq('id',orderId).single();
+    var ir=await sb.from('order_items').select('*').eq('order_id',orderId).order('created_at');
+    if(or.error||ir.error){el.innerHTML='<div class="orders-empty">Errore nel caricamento.</div>';return}
+    var o=or.data,items=ir.data||[];
+    var h='<div class="orders-title"><button class="back-btn" id="back-orders" style="display:inline-flex">← Indietro</button> Ordine <span style="color:var(--accent)">#'+o.order_number+'</span></div>';
+
+    h+='<div class="od-section"><h4>Stato</h4><div class="od-info"><span class="or-status s-'+o.status+'" style="font-size:.8rem">'+STATUS_LABELS[o.status]+'</span> · '+fmtDate(o.created_at)+'</div></div>';
+
+    h+='<div class="od-section"><h4>Consegna</h4><div class="od-info">'+esc(o.delivery_hotel||'-')+'<br>'+esc(o.delivery_address||'-')+'<br>Ref: '+esc(o.contact_person||'-')+' · '+esc(o.contact_phone||'-')+'</div></div>';
+
+    h+='<div class="od-section"><h4>Fatturazione</h4><div class="od-info">'+esc(o.billing_company||'-')+'<br>P.IVA: '+esc(o.billing_vat||'-')+'</div></div>';
+
+    h+='<div class="od-section"><h4>Prodotti</h4><table class="od-items-table"><thead><tr><th>Prodotto</th><th>Fornitore</th><th>Q.tà</th><th>Prezzo</th><th>Totale</th></tr></thead><tbody>';
+    items.forEach(function(it){
+      h+='<tr><td>'+esc(it.description)+'<br><span style="font-size:.72rem;color:var(--text3)">'+esc(it.selling_uom||'')+'</span></td><td>'+esc(it.supplier_name||'-')+'</td><td style="text-align:center">'+it.qty+'</td><td>'+fmtPrice(it.unit_price)+'</td><td style="font-weight:600">'+fmtPrice(it.line_total)+'</td></tr>';
+    });
+    h+='<tr class="od-total-row"><td colspan="4" style="text-align:right">Totale ordine</td><td style="color:var(--accent)">'+fmtPrice(o.total)+'</td></tr>';
+    h+='</tbody></table></div>';
+
+    if(o.notes){h+='<div class="od-section"><h4>Note</h4><div class="od-info">'+esc(o.notes)+'</div></div>'}
+
+    el.innerHTML=h;
+    document.getElementById('back-orders').addEventListener('click',function(){loadOrders()});
+  }
+
+})();
+</script>
+</body>
+</html>
