@@ -248,6 +248,33 @@
     .nav-tab{padding:.35rem .7rem;border-radius:8px;font-size:.78rem;font-weight:600;cursor:pointer;color:var(--text3);background:transparent;border:none;font-family:inherit;transition:all .15s}
     .nav-tab:hover{color:var(--text);background:var(--bg-hover)}
     .nav-tab.active{color:var(--accent);background:var(--accent-s)}
+
+    /* ===== ORDER POPUP ===== */
+    .order-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;align-items:center;justify-content:center;padding:1rem}
+    .order-overlay.open{display:flex}
+    .order-popup{background:var(--card-bg);border:1px solid var(--card-border);border-radius:16px;box-shadow:var(--shadow-md);width:100%;max-width:580px;max-height:85vh;display:flex;flex-direction:column;animation:popUp .25s ease}
+    @keyframes popUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+    .op-head{display:flex;align-items:center;justify-content:space-between;padding:1rem 1.25rem;border-bottom:1px solid var(--border)}
+    .op-head h3{font-size:1rem;font-weight:700}
+    .op-close{background:none;border:none;color:var(--text3);cursor:pointer;padding:.2rem;transition:color .15s}
+    .op-close:hover{color:var(--text)}
+    .op-close svg{width:20px;height:20px}
+    .op-body{flex:1;overflow-y:auto;padding:1rem 1.25rem}
+    .op-sect{margin-bottom:1rem}
+    .op-sect:last-child{margin-bottom:0}
+    .op-sect h4{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);margin-bottom:.35rem}
+    .op-sect .op-info{font-size:.85rem;color:var(--text2);line-height:1.5}
+    .op-items{width:100%;font-size:.82rem;border-collapse:collapse}
+    .op-items th{text-align:left;padding:.4rem .5rem;font-weight:600;font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;color:var(--text3);border-bottom:1px solid var(--border)}
+    .op-items td{padding:.4rem .5rem;border-bottom:1px solid var(--border);vertical-align:top}
+    .op-items tr:last-child td{border-bottom:none}
+    .op-items .op-tot-row td{border-top:2px solid var(--border);font-weight:700;padding-top:.6rem}
+    .op-items .op-tot-row .op-tot-val{color:var(--accent);font-size:.95rem}
+    .op-foot{display:flex;gap:.5rem;padding:1rem 1.25rem;border-top:1px solid var(--border)}
+    .op-foot button{flex:1;padding:.6rem;font-family:inherit;font-size:.85rem;font-weight:600;border:none;border-radius:10px;cursor:pointer;transition:all .15s}
+    .op-foot .op-modify{background:var(--bg3);color:var(--text2)}.op-foot .op-modify:hover{background:var(--bg-hover);color:var(--text)}
+    .op-foot .op-confirm{background:var(--accent);color:#fff}.op-foot .op-confirm:hover{background:var(--accent-h)}
+    .op-foot button:disabled{opacity:.5;cursor:not-allowed}
   </style>
 </head>
 <body>
@@ -344,6 +371,21 @@
           <button id="cart-send" disabled>Invia richiesta ordine</button>
         </div>
       </aside>
+    </div>
+  </div>
+</div>
+
+<!-- Order confirmation popup -->
+<div class="order-overlay" id="order-overlay">
+  <div class="order-popup">
+    <div class="op-head">
+      <h3>📋 Riepilogo ordine</h3>
+      <button class="op-close" id="op-close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="op-body" id="op-body"></div>
+    <div class="op-foot">
+      <button class="op-modify" id="op-modify">✏️ Modifica ordine</button>
+      <button class="op-confirm" id="op-confirm">✅ Conferma ordine</button>
     </div>
   </div>
 </div>
@@ -591,3 +633,272 @@
         return;
       }
       var rebuilt=false,newLines=[];
+      for(var i=0;i<lines.length;i++){
+        var tmp=document.createElement('span');tmp.innerHTML=lines[i];
+        var lt=tmp.textContent.trim();
+        if(lt.indexOf('€')!==-1){
+          var prod=extractProductFromText(lt);
+          if(prod){
+            var lid='pline-'+Math.random().toString(36).substr(2,6);
+            newLines.push('<span class="product-line" data-d="'+esc(prod.description)+'" data-s="'+esc(prod.supplier_name)+'" data-p="'+prod.price+'" data-u="'+esc(prod.selling_uom)+'">'+lines[i]+'</span>');
+            rebuilt=true;continue;
+          }
+        }
+        newLines.push(lines[i]);
+      }
+      if(rebuilt){
+        p.innerHTML=newLines.join('<br>');
+        p.querySelectorAll('.product-line').forEach(function(span){
+          createCartBtn({description:span.dataset.d,supplier_name:span.dataset.s,price:parseFloat(span.dataset.p)||0,selling_uom:span.dataset.u},span,null);
+        });
+      }
+    });
+  }
+
+  function addMsg(role,text,products){
+    var el=document.getElementById('msgs'),d=document.createElement('div');d.className='msg';
+    var isU=role==='user';
+    d.innerHTML='<div class="msg-head"><div class="msg-icon '+(isU?'u':'b')+'">'+(isU?'Tu':'HS')+'</div><div class="msg-label '+(isU?'u':'b')+'">'+(isU?'Tu':'Hotel Supply Pro')+'</div></div><div class="msg-body">'+(isU?renderUser(text):marked.parse(text))+'</div>';
+    if(!isU)injectInlineCartButtons(d);
+    el.appendChild(d);
+    document.getElementById('msg-area').scrollTop=document.getElementById('msg-area').scrollHeight;
+  }
+  function showTyping(){var el=document.getElementById('msgs'),d=document.createElement('div');d.className='msg';d.id='tp';d.innerHTML='<div class="msg-head"><div class="msg-icon b">HS</div><div class="msg-label b">Hotel Supply Pro</div></div><div class="msg-body typing-dots"><span></span><span></span><span></span></div>';el.appendChild(d);document.getElementById('msg-area').scrollTop=document.getElementById('msg-area').scrollHeight}
+  function hideTyping(){var t=document.getElementById('tp');if(t)t.remove()}
+
+  function initChat(){
+    document.getElementById('msgs').innerHTML='';sessId=crypto.randomUUID();
+    var name=customer?(customer.contact_person||'').split(' ')[0]:'';
+    addMsg('bot',(name?'Ciao **'+name+'**!':'Ciao!')+'\n\nSono il tuo assistente per gli acquisti. Posso cercare prodotti, confrontare prezzi e gestire il tuo carrello.\n\nCosa posso fare per te?');
+    var el=document.getElementById('msgs'),chips=document.createElement('div');chips.className='chips';chips.id='chps';
+    ['Che prosecco avete?','Prodotti per la colazione','Detersivi per la cucina','Confronta prezzi Coca Cola'].forEach(function(t){
+      var c=document.createElement('span');c.className='chip';c.textContent=t;
+      c.addEventListener('click',function(){chips.remove();doSend(t)});chips.appendChild(c);
+    });
+    el.appendChild(chips);document.getElementById('cin').focus();
+  }
+
+  /* ===== SEND ===== */
+
+  async function doSend(text){
+    if(busy)return;
+    if(!text){text=document.getElementById('cin').value.trim();document.getElementById('cin').value=''}
+    if(!text)return;
+    var ch=document.getElementById('chps');if(ch)ch.remove();
+    addMsg('user',text);busy=true;document.getElementById('btn-send').disabled=true;showTyping();
+    // Flush cart to Supabase before sending so agent reads fresh data
+    if(syncTimer)clearTimeout(syncTimer);syncTimer=null;
+    if(customer&&customer.id){try{await sb.from('cart_sessions').upsert({customer_id:customer.id,session_id:sessId,items:cart,updated_at:new Date().toISOString()},{onConflict:'customer_id,session_id'})}catch(e){}}
+    try{
+      var res=await fetch(N8N,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chatInput:text,sessionId:sessId,customerId:customer?customer.id:'',customerName:customer?(customer.contact_person||''):'',hotelName:customer?(customer.hotel_name||''):'',companyName:customer?(customer.company_name||''):''})}); 
+      hideTyping();var data=await res.json();
+      var raw=typeof data==='string'?data:(data.output||data.text||data.response||data.message||JSON.stringify(data));
+      var p=parseResponse(raw);
+      if(p.cartActions.length)applyCartActions(p.cartActions);
+      addMsg('bot',p.text,p.products);
+    }catch(e){hideTyping();addMsg('bot','Errore di comunicazione. Riprova.')}
+    busy=false;document.getElementById('btn-send').disabled=false;document.getElementById('cin').focus();
+  }
+
+  document.getElementById('btn-send').addEventListener('click',function(){doSend()});
+  document.getElementById('cin').addEventListener('keydown',function(e){if(e.key==='Enter')doSend()});
+  document.getElementById('btn-new').addEventListener('click',function(){initChat()});
+
+  /* ===== CART + SUPABASE SYNC ===== */
+  var syncTimer=null;
+
+  // Debounced sync: writes cart to Supabase cart_sessions
+  function syncCart(){
+    if(syncTimer)clearTimeout(syncTimer);
+    syncTimer=setTimeout(async function(){
+      if(!customer||!customer.id)return;
+      try{
+        var r=await sb.from('cart_sessions').upsert({
+          customer_id:customer.id,
+          session_id:sessId,
+          items:cart,
+          updated_at:new Date().toISOString()
+        },{onConflict:'customer_id,session_id'});
+        if(r.error)console.error('syncCart error:',r.error.message);
+      }catch(e){console.error('syncCart exception:',e)}
+    },300);
+  }
+
+  // Load cart from Supabase (on page reload / session restore)
+  async function loadCart(){
+    if(!customer||!customer.id)return;
+    try{
+      var r=await sb.from('cart_sessions').select('items').eq('customer_id',customer.id).eq('session_id',sessId).maybeSingle();
+      if(r.data&&Array.isArray(r.data.items)&&r.data.items.length){
+        cart=r.data.items;
+        renderCartSidebar();
+      }
+    }catch(e){console.error('loadCart:',e)}
+  }
+
+  function addToCart(item){
+    var ex=cart.find(function(c){return c.id===item.id});
+    if(ex){ex.qty+=item.qty}else{cart.push({id:item.id,description:item.description,supplier_name:item.supplier_name,price:item.price,selling_uom:item.selling_uom,qty:item.qty})}
+    renderCartSidebar(item.id);
+    syncCart();
+  }
+  function removeFromCart(id){cart=cart.filter(function(c){return c.id!==id});renderCartSidebar();syncCart()}
+  function updateQty(id,qty){var it=cart.find(function(c){return c.id===id});if(it){if(qty<1)removeFromCart(id);else{it.qty=qty;renderCartSidebar(id);syncCart()}}}
+
+  function applyCartActions(actions){
+    actions.forEach(function(a){
+      if(a.action==='add'&&a.id){
+        var ex=cart.find(function(c){return c.id===a.id});
+        if(ex){ex.qty+=(parseInt(a.qty)||1)}else{cart.push({id:a.id,description:a.description||'Prodotto',supplier_name:a.supplier_name||'',price:parseFloat(a.price)||0,selling_uom:a.selling_uom||'',qty:parseInt(a.qty)||1})}
+      }else if(a.action==='remove'){cart=cart.filter(function(c){return c.id!==a.id})}
+      else if(a.action==='update_qty'&&a.id){var it=cart.find(function(c){return c.id===a.id});if(it)it.qty=Math.max(1,parseInt(a.qty)||1)}
+      else if(a.action==='clear'){cart=[]}
+    });
+    renderCartSidebar();
+    syncCart();
+  }
+
+  /* ===== RENDER CART SIDEBAR (live) ===== */
+  function renderCartSidebar(flashId){
+    var el=document.getElementById('cart-items');
+    var cnt=cart.reduce(function(s,c){return s+c.qty},0);
+    var total=cart.reduce(function(s,c){return s+c.price*c.qty},0);
+
+    // Update counters
+    var cntEl=document.getElementById('cart-count');
+    cntEl.textContent=cnt;
+    cntEl.className='cart-count'+(cnt===0?' z':'');
+    document.getElementById('cart-total').textContent='€'+total.toFixed(2).replace('.',',');
+    document.getElementById('cart-send').disabled=cart.length===0;
+
+    // Mobile badge
+    var mob=document.getElementById('cart-badge-mob');
+    if(cnt>0){mob.textContent=cnt;mob.classList.remove('hide')}else{mob.classList.add('hide')}
+
+    if(!cart.length){
+      el.innerHTML='<div class="cart-sb-empty"><div class="cart-empty-icon">🛒</div>Il carrello è vuoto.<br>Cerca prodotti e aggiungili qui.</div>';
+      return;
+    }
+
+    var h='';
+    cart.forEach(function(c){
+      var flash=flashId===c.id?' csi-flash':'';
+      h+='<div class="csi'+flash+'" data-id="'+c.id+'">';
+      h+='<div class="csi-info"><div class="csi-name">'+esc(c.description)+'</div><div class="csi-det">'+esc(c.supplier_name)+' · '+esc(c.selling_uom)+'</div><div class="csi-price">€'+(c.price*c.qty).toFixed(2).replace('.',',')+'</div></div>';
+      h+='<div class="csi-q"><button class="cq-m" data-id="'+c.id+'">−</button><span>'+c.qty+'</span><button class="cq-p" data-id="'+c.id+'">+</button></div>';
+      h+='<button class="csi-rm" data-id="'+c.id+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>';
+      h+='</div>';
+    });
+    el.innerHTML=h;
+
+    // Remove flash after animation
+    if(flashId){setTimeout(function(){var f=el.querySelector('.csi-flash');if(f)f.classList.remove('csi-flash')},400)}
+
+    // Bind sidebar buttons
+    el.querySelectorAll('.cq-m').forEach(function(b){b.addEventListener('click',function(){var it=cart.find(function(c){return c.id===b.dataset.id});if(it)updateQty(b.dataset.id,it.qty-1)})});
+    el.querySelectorAll('.cq-p').forEach(function(b){b.addEventListener('click',function(){var it=cart.find(function(c){return c.id===b.dataset.id});if(it)updateQty(b.dataset.id,it.qty+1)})});
+    el.querySelectorAll('.csi-rm').forEach(function(b){b.addEventListener('click',function(){removeFromCart(b.dataset.id)})});
+  }
+
+  /* ===== ORDER POPUP ===== */
+  function fmtP(n){return '€'+(n||0).toFixed(2).replace('.',',')}
+
+  function openOrderPopup(){
+    if(!cart.length||!customer)return;
+    var total=cart.reduce(function(s,c){return s+c.price*c.qty},0);
+    var h='';
+
+    // Products
+    h+='<div class="op-sect"><h4>Prodotti</h4><table class="op-items"><thead><tr><th>Prodotto</th><th>Forn.</th><th style="text-align:center">Q.tà</th><th>Prezzo</th><th>Totale</th></tr></thead><tbody>';
+    cart.forEach(function(c){
+      h+='<tr><td>'+esc(c.description)+'<br><span style="font-size:.7rem;color:var(--text3)">'+esc(c.selling_uom||'')+'</span></td>';
+      h+='<td style="font-size:.78rem">'+esc(c.supplier_name||'')+'</td>';
+      h+='<td style="text-align:center">'+c.qty+'</td>';
+      h+='<td>'+fmtP(c.price)+'</td>';
+      h+='<td style="font-weight:600">'+fmtP(c.price*c.qty)+'</td></tr>';
+    });
+    h+='<tr class="op-tot-row"><td colspan="4" style="text-align:right">Totale ordine</td><td class="op-tot-val">'+fmtP(total)+'</td></tr>';
+    h+='</tbody></table></div>';
+
+    // Delivery
+    h+='<div class="op-sect"><h4>Consegna</h4><div class="op-info">';
+    h+=esc(customer.hotel_name||'—')+'<br>'+esc(customer.hotel_address||'—');
+    h+='<br>Ref: '+esc(customer.contact_person||'—')+' · '+esc(customer.phone||'—');
+    h+='</div></div>';
+
+    // Billing
+    h+='<div class="op-sect"><h4>Fatturazione</h4><div class="op-info">';
+    h+=esc(customer.company_name||'—')+'<br>P.IVA: '+esc(customer.vat_number||'—');
+    h+='</div></div>';
+
+    document.getElementById('op-body').innerHTML=h;
+    document.getElementById('order-overlay').classList.add('open');
+    // Close mobile sidebar
+    document.getElementById('cart-sb').classList.remove('open');
+    document.getElementById('cart-mob-overlay').classList.remove('open');
+  }
+
+  function closeOrderPopup(){document.getElementById('order-overlay').classList.remove('open')}
+
+  document.getElementById('cart-send').addEventListener('click',function(){openOrderPopup()});
+  document.getElementById('op-close').addEventListener('click',function(){closeOrderPopup()});
+  document.getElementById('order-overlay').addEventListener('click',function(e){if(e.target===this)closeOrderPopup()});
+
+  // Modify: close popup, go to chat, agent offers help
+  document.getElementById('op-modify').addEventListener('click',function(){
+    closeOrderPopup();
+    showView('chat');
+    addMsg('bot','Nessun problema! Puoi modificare il carrello aggiungendo o rimuovendo prodotti, oppure dimmi cosa vuoi cambiare e ci penso io. 😊');
+    document.getElementById('cin').focus();
+  });
+
+  // Confirm: save to Supabase, tell agent to send email, clear cart
+  document.getElementById('op-confirm').addEventListener('click',async function(){
+    if(!cart.length||!customer)return;
+    var btnC=document.getElementById('op-confirm');
+    var btnM=document.getElementById('op-modify');
+    btnC.disabled=true;btnM.disabled=true;btnC.textContent='Invio in corso...';
+    try{
+      var total=cart.reduce(function(s,c){return s+c.price*c.qty},0);
+      // Create order on Supabase
+      var or=await sb.from('orders').insert({
+        customer_id:customer.id,
+        total:Math.round(total*100)/100,
+        delivery_hotel:customer.hotel_name||'',
+        delivery_address:customer.hotel_address||'',
+        billing_company:customer.company_name||'',
+        billing_vat:customer.vat_number||'',
+        contact_person:customer.contact_person||'',
+        contact_phone:customer.phone||'',
+        status:'pending'
+      }).select('id,order_number').single();
+      if(or.error)throw or.error;
+      // Create order items
+      var items=cart.map(function(c){return{order_id:or.data.id,product_id:c.id&&c.id.match(/^[0-9a-f-]{36}$/)?c.id:null,description:c.description,supplier_name:c.supplier_name,selling_uom:c.selling_uom,unit_price:c.price,qty:c.qty}});
+      var ir=await sb.from('order_items').insert(items);
+      if(ir.error)throw ir.error;
+
+      // Build order summary for agent
+      var orderNum=or.data.order_number;
+      var summary='ORDINE CONFERMATO #'+orderNum+' — Invia email di conferma.\n';
+      summary+='Prodotti:\n';
+      cart.forEach(function(c){summary+='- '+c.qty+'x '+c.description+' ('+c.supplier_name+', '+(c.price||0).toFixed(2)+' EUR)\n'});
+      summary+='Totale: '+total.toFixed(2)+' EUR\n';
+      summary+='Consegna: '+customer.hotel_name+', '+customer.hotel_address+'\n';
+      summary+='Fatturazione: '+customer.company_name+', P.IVA '+customer.vat_number+'\n';
+      summary+='Referente: '+customer.contact_person+', '+customer.phone+'\n';
+      summary+='Email cliente: '+customer.email;
+
+      // Clear cart
+      cart=[];renderCartSidebar();syncCart();
+      // Close popup
+      closeOrderPopup();
+      showView('chat');
+      // Send to agent (agent will send email)
+      doSend(summary);
+    }catch(e){
+      console.error('submitOrder error:',e);
+      closeOrderPopup();
+      addMsg('bot','Errore nell\'invio dell\'ordine: '+(e.message||e)+'. Riprova.');
+    }
+    btnC.disabled=false;btnM.disabled=false;btnC.textContent='✅ Conferma ordine';
