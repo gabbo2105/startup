@@ -397,7 +397,7 @@
 (function(){
   var SUPA_URL='https://wvlqjpmphfhkctupwvvd.supabase.co';
   var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind2bHFqcG1waGZoa2N0dXB3dnZkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA3MzMwNjIsImV4cCI6MjA4NjMwOTA2Mn0.Ov8iONgG-Ou4CuoMFBZ3S7WAlhHaEYrjiiE8u6z9MOg';
-  var N8N='https://gabbo.app.n8n.cloud/webhook/b5092d51-dd56-49c7-9188-820052fd2ba4/chat';
+  var N8N_PROXY=SUPA_URL+'/functions/v1/chat-proxy';
   var sb=window.supabase.createClient(SUPA_URL,SUPA_KEY);
   var customer=null,sessId=crypto.randomUUID(),busy=false;
   var cart=[];
@@ -690,7 +690,9 @@
     if(syncTimer)clearTimeout(syncTimer);syncTimer=null;
     if(customer&&customer.id){try{await sb.from('cart_sessions').upsert({customer_id:customer.id,session_id:sessId,items:cart,updated_at:new Date().toISOString()},{onConflict:'customer_id,session_id'})}catch(e){}}
     try{
-      var res=await fetch(N8N,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chatInput:text,sessionId:sessId,customerId:customer?customer.id:'',customerName:customer?(customer.contact_person||''):'',hotelName:customer?(customer.hotel_name||''):'',companyName:customer?(customer.company_name||''):''})}); 
+      var session=await sb.auth.getSession();
+      var token=session.data.session?session.data.session.access_token:'';
+      var res=await fetch(N8N_PROXY,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({chatInput:text,sessionId:sessId})});
       hideTyping();var data=await res.json();
       var raw=typeof data==='string'?data:(data.output||data.text||data.response||data.message||JSON.stringify(data));
       var p=parseResponse(raw);

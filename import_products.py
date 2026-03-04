@@ -34,8 +34,13 @@ except ImportError:
     sys.exit(1)
 
 # Configuration
-SUPABASE_URL = os.environ.get('SUPABASE_URL', 'https://wvlqjpmphfhkctupwvvd.supabase.co')
+SUPABASE_URL = os.environ.get('SUPABASE_URL', '')
 SUPABASE_SERVICE_KEY = os.environ.get('SUPABASE_SERVICE_KEY', '')
+
+if not SUPABASE_URL:
+    print("ERROR: Set SUPABASE_URL environment variable")
+    print("  export SUPABASE_URL='https://your-project.supabase.co'")
+    sys.exit(1)
 BATCH_SIZE = 500
 
 # Supplier mapping (UUIDs assigned during migration)

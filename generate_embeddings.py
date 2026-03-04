@@ -13,8 +13,13 @@ import sys
 import time
 import requests
 
-SUPABASE_URL = os.environ.get('SUPABASE_URL', 'https://wvlqjpmphfhkctupwvvd.supabase.co')
+SUPABASE_URL = os.environ.get('SUPABASE_URL', '')
 OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', '')
+
+if not SUPABASE_URL:
+    print("ERROR: Set SUPABASE_URL environment variable")
+    print("  export SUPABASE_URL='https://your-project.supabase.co'")
+    sys.exit(1)
 
 if not OPENAI_API_KEY:
     print("ERROR: Set OPENAI_API_KEY environment variable")

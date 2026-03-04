@@ -1,245 +1,157 @@
-# 🏨 Catalogo Fornitori - Borgo Palace Hotel Sansepolcro
+# Hotel Supply Pro
 
-## Database Supabase + AI Search Agent
+AI-powered product search for hotel procurement. Combines Italian full-text search, fuzzy matching, and semantic vector search across 9,189 products from 6 suppliers.
 
-### 📋 TODO LIST
-
-| # | Task | Stato | Note |
-|---|------|-------|------|
-| 1 | ✅ Design schema DB | ✅ Completato | 3 tabelle: `suppliers`, `products`, `price_lists` |
-| 2 | ✅ Migration: tabelle base | ✅ Completato | Con indici trigram per fuzzy search |
-| 3 | ✅ Migration: full-text search IT | ✅ Completato | tsvector generato + funzioni `search_products_fts`, `search_products_fuzzy` |
-| 4 | ✅ Migration: vector search | ✅ Completato | pgvector + HNSW index + `search_products_semantic`, `search_products_hybrid` |
-| 5 | ✅ Migration: RLS policies | ✅ Completato | Read-only per anon, full per authenticated |
-| 6 | ✅ ETL: import dati Excel | ✅ Completato | 9.189 prodotti importati |
-| 7 | ✅ Generare embeddings | ✅ Completato | 9.189/9.189 con OpenAI text-embedding-3-small |
-| 8 | ✅ Edge Function: search API | ✅ Completato | Hybrid search con embedding automatico |
-| 9 | ✅ Agente AI (n8n) | ✅ Operativo | Workflow "startup" con GPT-4.1-mini |
-| 10 | ⬜ Webhook esterno | Da fare | WhatsApp, Telegram o sito web |
-
----
-
-### 🚀 Quick Start: Importare i Dati
+## Quick Start
 
 ```bash
-# 1. Installa dipendenza
+# 1. Clone and configure
+cp .env.example .env
+# Edit .env with your Supabase and OpenAI credentials
+
+# 2. Apply database migrations (in order)
+# Run each .sql file in Supabase Dashboard > SQL Editor:
+# 001_create_base_tables.sql through 011_create_customers_table.sql
+
+# 3. Import product data
 pip install requests
+python import_products.py --json-file all_products.json
 
-# 2. Configura variabili d'ambiente
-export SUPABASE_URL="https://wvlqjpmphfhkctupwvvd.supabase.co"
-export SUPABASE_SERVICE_KEY="your-service-role-key-here"
-# ⚠️ Prendi la service_role key da: Supabase Dashboard > Settings > API
+# 4. Generate embeddings
+python generate_embeddings.py
 
-# 3. Lancia l'import (usa il JSON pre-generato in data/)
-cd scripts
-python import_products.py --json-file ../data/all_products.json
-
-# Alternativa: import da Excel (richiede: pip install pandas openpyxl)
-python import_products.py --from-excel ../data/Sansepolcro_Borgo_Palace_Hotel__2025_04_05.xlsx
+# 5. Deploy Edge Functions
+supabase functions deploy search --project-ref $SUPABASE_PROJECT_REF
+supabase functions deploy chat-proxy --project-ref $SUPABASE_PROJECT_REF
 ```
 
----
-
-### 📊 Schema Database
-
-```
-price_lists
-├── id (uuid, PK)
-├── hotel_name (text)
-├── price_valid_date (date) → "2025-04-05"
-├── source_file (text)
-└── created_at
-
-suppliers (6 record)
-├── id (uuid, PK)
-├── name (text, UNIQUE) → "MARR SPA", "Bindi"...
-├── account_number (text)
-├── depot (text)
-└── created_at
-
-products (9.189 record)
-├── id (uuid, PK)
-├── price_list_id (FK → price_lists)
-├── supplier_id (FK → suppliers)
-├── supplier_code (text) → "13350"
-├── description (text) → "CHARDONNAY TASCA D'ALMERITA CL75"
-├── selling_uom (text) → "CT da 6"
-├── pricing_uom (text) → "1 x 1 x 750.00 ml"
-├── price (numeric) → 33.52
-├── fts_vector (tsvector, GENERATED) → full-text search italiano
-├── embedding (vector(1536)) → per semantic search
-└── created_at
-```
-
-**Fornitori importati:**
-| Fornitore | Prodotti | Tipo |
-|-----------|----------|------|
-| DAC SPA | 4.308 | Vini, bevande, alimentari |
-| MARR SPA | 2.363 | Alimentari, surgelati |
-| DORECA ITALIA S.P.A. | 959 | Bevande, spirits |
-| Bindi | 576 | Pasticceria, gelati, colazione |
-| Forno d'Asolo | 502 | Panificati, cornetteria |
-| Centrofarc S.p.A. | 481 | Detergenti, cleaning |
-
----
-
-### 🔍 Come Funziona la Ricerca
-
-Il database supporta **3 modalità di ricerca**, combinabili:
-
-#### 1. Full-Text Search (Italiano)
-```sql
-SELECT * FROM search_products_fts('biscotti burro');
--- Trova: "BISCOTTI FROLLINI AL BURRO", "BISCOTTI CANTUCCI"...
-```
-
-#### 2. Fuzzy Search (per errori di battitura)
-```sql
-SELECT * FROM search_products_fuzzy('proseco', 0.15);
--- Trova: "PROSECCO..." anche con typo
-```
-
-#### 3. Semantic Search (con embeddings AI)
-```sql
-SELECT * FROM search_products_semantic(
-  '[0.1, 0.2, ...]'::vector,  -- embedding della query
-  NULL,  -- no supplier filter
-  NULL, NULL,  -- no price filter
-  0.5,   -- similarity threshold
-  20     -- limit
-);
-```
-
-#### 4. Hybrid Search (combina FTS + Semantic)
-```sql
-SELECT * FROM search_products_hybrid(
-  'prodotti per colazione',     -- testo
-  '[...]'::vector,              -- embedding
-  NULL,                         -- supplier filter
-  0, 50,                        -- price range
-  0.4, 0.6,                     -- weights (fts, semantic)
-  30                            -- limit
-);
-```
-
----
-
-### 🤖 Connessione con Agente AI
-
-L'agente AI può connettersi tramite:
-
-1. **Supabase REST API** (più semplice)
-   ```
-   GET /rest/v1/rpc/search_products_fts?search_query=vino+rosso&result_limit=20
-   ```
-
-2. **Edge Function** (raccomandato per hybrid search)
-   - L'agente invia la query in linguaggio naturale
-   - L'Edge Function genera l'embedding, chiama la hybrid search
-   - Ritorna risultati ranked
-
-3. **MCP Server Supabase** (se l'agente supporta MCP)
-   - Connessione diretta al DB via MCP
-   - L'agente può fare query SQL direttamente
-
----
-
-### 📁 Struttura Progetto
+## Project Structure
 
 ```
 startup/
-├── README.md
-├── .env.example
-├── .gitignore
+├── index.html                  # SPA frontend (auth + chat + search UI)
+├── index.ts                    # Edge Function: hybrid search
+├── chat_proxy.ts               # Edge Function: n8n chat proxy
+├── deno.json                   # Deno config + tasks
 │
-├── supabase/
-│   └── migrations/
-│       ├── 001_create_base_tables.sql
-│       ├── 002_add_fulltext_search.sql
-│       ├── 003_add_vector_search.sql
-│       ├── 004_add_rls_policies.sql
-│       ├── 005_seed_data.sql
-│       ├── 006_fix_vector_schema.sql
-│       ├── 007_fix_all_search_functions.sql
-│       └── 008_optimize_hybrid_search.sql
+├── 001_create_base_tables.sql  # Schema: suppliers, products, price_lists
+├── 002_add_fulltext_search.sql # FTS: tsvector (Italian) + search functions
+├── 003_add_vector_search.sql   # pgvector: embeddings + HNSW index
+├── 004_add_rls_policies.sql    # RLS: read-only for all
+├── 005_seed_data.sql           # Seed data
+├── 006_fix_vector_schema.sql   # Vector schema fixes
+├── 007_fix_all_search_functions.sql
+├── 008_optimize_hybrid_search.sql  # UNION-based hybrid search (perf fix)
+├── 009_fix_rls_policies.sql    # Admin-only write policies
+├── 010_fix_hybrid_scoring.sql  # Min-max FTS normalization + similarity threshold
+├── 011_create_customers_table.sql  # Customer profiles + auto-creation trigger
 │
-├── scripts/
-│   ├── import_products.py         ← Import JSON/Excel → Supabase
-│   └── generate_embeddings.py     ← Genera embeddings via Edge Function
+├── import_products.py          # ETL: JSON/Excel → Supabase
+├── generate_embeddings.py      # Generate OpenAI embeddings for all products
 │
-├── edge-functions/
-│   ├── import-products/
-│   │   └── index.ts
-│   └── search/
-│       └── index.ts               ← Hybrid search (FTS + semantic)
+├── tests/
+│   ├── helpers.ts              # Extracted pure functions for testing
+│   ├── search_test.ts          # 27 tests (search edge function)
+│   ├── chat_proxy_test.ts      # 18 tests (chat proxy)
+│   └── xss_test.ts             # 20 tests (XSS prevention)
 │
 ├── docs/
-│   └── documentazione_tecnica.md  ← Documentazione completa del sistema
+│   ├── api.md                  # API reference (Edge Functions + RPC)
+│   ├── architecture.md         # System architecture + data flows
+│   ├── privacy.md              # GDPR + data protection
+│   └── adr/                    # Architecture Decision Records
 │
-└── data/
-    ├── .gitkeep
-    └── all_products.json          ← 9.189 prodotti pre-parsati
+├── .github/workflows/ci.yml   # CI/CD: lint, test, deploy
+├── .env.example                # Environment variable template
+└── .gitignore
 ```
 
----
+## Environment Variables
 
-### 🛡️ Best Practices
+| Variable | Where | Description |
+|----------|-------|-------------|
+| `SUPABASE_URL` | Edge Functions (auto), Python scripts | Project API URL |
+| `SUPABASE_ANON_KEY` | Edge Functions (auto) | Anon key (client-safe, RLS-gated) |
+| `SUPABASE_SERVICE_ROLE_KEY` | Edge Functions (auto), Python scripts | Service role key (server-only) |
+| `OPENAI_API_KEY` | Edge Function secrets | OpenAI API key for embeddings |
+| `N8N_WEBHOOK_URL` | Edge Function secrets | n8n chat webhook URL |
 
-#### Sicurezza
-- ✅ RLS abilitato su tutte le tabelle
-- ✅ Read-only per utenti anonimi (l'agente AI)
-- ✅ Write solo per utenti autenticati (admin)
-- ⚠️ **MAI** esporre la `service_role` key nel frontend o nell'agente
-- 💡 Usa la `anon` key per l'agente AI (read-only è sufficiente)
+Set Edge Function secrets via:
+```bash
+supabase secrets set OPENAI_API_KEY=sk-... N8N_WEBHOOK_URL=https://...
+```
 
-#### Performance
-- ✅ Indice GIN trigram per fuzzy search
-- ✅ Indice GIN per full-text search
-- ✅ Indice HNSW per vector search (~9K rows, perfetto)
-- ✅ Indici B-tree su supplier_id, price, supplier_code
+## Development
 
-#### Data Quality
-- Il campo `pricing_uom` contiene info strutturate: `"1 x 12 x 750.00 ml"`
-  - Pattern: `{casse} x {pezzi_per_cassa} x {peso/volume_unitario} {unità}`
-  - Potrebbe essere utile parsarli in colonne separate per filtri avanzati
+```bash
+# Install Deno (v2+)
+# https://deno.land/manual/getting_started/installation
 
-#### Aggiornamento Prezzi
-- Ogni import crea un nuovo `price_list` con data validità
-- I prodotti sono legati al price_list → storico prezzi automatico
-- Per aggiornare: caricare il nuovo Excel e rieseguire lo script
+# Run tests
+deno task test
 
----
+# Lint
+deno task lint
 
-### 🔑 Credenziali Progetto
+# Format
+deno task fmt
 
-| Parametro | Valore |
-|-----------|--------|
-| Project ID | `wvlqjpmphfhkctupwvvd` |
-| Region | `eu-west-1` |
-| API URL | `https://wvlqjpmphfhkctupwvvd.supabase.co` |
-| Anon Key | `eyJhbGciOi...` (vedi dashboard) |
-| Dashboard | [Supabase Dashboard](https://supabase.com/dashboard/project/wvlqjpmphfhkctupwvvd) |
+# Format check (CI)
+deno task fmt:check
+```
 
----
+## Database Schema
 
-### 📝 Prossimi Passi
+| Table | Rows | Description |
+|-------|------|-------------|
+| `products` | 9,189 | Product catalog with FTS vector + embedding |
+| `suppliers` | 6 | DAC, MARR, DORECA, Bindi, Forno d'Asolo, Centrofarc |
+| `price_lists` | 1+ | Import metadata with validity dates |
+| `customers` | * | Customer profiles (auto-created on signup) |
 
-1. ~~Eseguire l'import~~ ✅ 9.189 prodotti importati
-2. ~~Generare embeddings~~ ✅ 9.189/9.189 (100%)
-3. ~~Creare Edge Function search~~ ✅ Hybrid search con embedding automatico
-4. ~~Configurare l'agente AI~~ ✅ Operativo su n8n
-5. **Migliorare** → Prompt agente, webhook WhatsApp/Telegram/sito
+### Search Indexes
 
-Abbiamo esplorato come un sistema di ricerca moderno non si limiti a "leggere" le parole, ma cerchi di "capirne" il significato. Il modello text-embedding-3-small 🧠 è il motore invisibile che rende possibile tutto questo. Ti guiderò attraverso un riassunto dei punti chiave e poi potremo decidere insieme quale aspetto approfondire.
+- **GIN** on `fts_vector` — Italian full-text search
+- **HNSW** on `embedding` — Vector cosine similarity (m=16, ef_construction=64)
+- **GIN** on `description` — Trigram fuzzy matching
+- **B-tree** on `supplier_id`, `price`, `supplier_code`
 
-Ecco il ruolo centrale del modello nel tuo sistema:
+### RLS Policies
 
-Traduttore Universale 🌍: Il modello prende testi in linguaggio naturale (come "alcol" o "Johnnie Walker") e li traduce in vettori (liste di 1536 numeri). Questa traduzione è ciò che permette al database di confrontare concetti diversi.
+- **products, suppliers, price_lists**: Read by all, write by admin only (`app_metadata.role = 'admin'`)
+- **customers**: Row-level isolation (own record), admin override
 
-Architetto dello Spazio Vettoriale 📐: Grazie al suo addestramento su miliardi di frasi, il modello posiziona le parole in una "mappa" a 1536 dimensioni. Parole con significati simili finiscono vicine, permettendo al calcolo della similarità del coseno di trovarle matematicamente.
+## API Endpoints
 
-Conoscenza Implicita 📚: È il modello a sapere che il whisky è un tipo di alcol. Senza questa conoscenza pre-installata nel modello 3-small, la tua ricerca restituirebbe risultati solo se le parole corrispondessero esattamente.
+See [docs/api.md](docs/api.md) for complete API reference.
 
-Efficienza e Precisione ⚡: Pur essendo la versione "small", gestisce la complessità semantica in modo estremamente veloce, rendendolo ideale per essere richiamato dalle tue Edge Functions ogni volta che carichi nuovi prodotti.
+| Endpoint | Method | Auth | Description |
+|----------|--------|------|-------------|
+| `/functions/v1/search` | POST | JWT | Hybrid product search |
+| `/functions/v1/chat-proxy` | POST | JWT | AI chat via n8n |
 
-In sintesi, il modello è il "cervello" che trasforma un database statico in un sistema capace di intuizione.
+## Architecture
+
+See [docs/architecture.md](docs/architecture.md) for diagrams and data flows.
+
+**Key design decisions:**
+- Hybrid search combines FTS + vector similarity with min-max normalization
+- n8n webhook URL hidden behind server-side proxy (never exposed to client)
+- Customer identity resolved server-side from JWT (never trusted from client)
+- OpenAI embeddings generated via `text-embedding-3-small` (1536 dimensions)
+- Rate limiting: 30 req/min per IP on search endpoint
+
+## Documentation
+
+- [API Reference](docs/api.md) — Edge Function endpoints, RPC functions, error codes
+- [Architecture](docs/architecture.md) — System design, data flows, security model
+- [Privacy & GDPR](docs/privacy.md) — Data processing, third-party processors, compliance
+- [ADRs](docs/adr/) — Architecture Decision Records
+
+## Grant Admin Access
+
+```sql
+UPDATE auth.users
+SET raw_app_meta_data = raw_app_meta_data || '{"role": "admin"}'
+WHERE email = 'admin@example.com';
+```
