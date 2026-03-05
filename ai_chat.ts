@@ -612,6 +612,9 @@ Deno.serve(async (req: Request) => {
     });
 
     // --- Tool calling loop ---
+    let finalContent = "";
+    let finalUsage = { prompt_tokens: 0, completion_tokens: 0 };
+
     for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
       const isLastRound = round === MAX_TOOL_ROUNDS - 1;
 
@@ -691,123 +694,60 @@ Deno.serve(async (req: Request) => {
           }),
         );
 
-        // Add tool results to conversation and save to DB
+        // Add tool results to conversation
         for (const tr of toolResults) {
           messages.push({
             role: "tool",
             tool_call_id: tr.tool_call_id,
             content: tr.result,
           });
-          await supabase.from("chat_messages").insert({
+        }
+        // Save tool results to DB in parallel
+        await Promise.all(toolResults.map((tr) =>
+          supabase.from("chat_messages").insert({
             customer_id: customer.id,
             session_id: trimmedSessionId,
             role: "tool",
             content: tr.result,
             tool_call_id: tr.tool_call_id,
             tool_name: tr.name,
-          });
-        }
+          })
+        ));
 
         log("info", "tool_round", { round, tools: toolResults.map((t) => t.name) });
         continue; // Next round
       }
 
-      // Model returned content — break to streaming
+      // Model returned content — use it directly (no redundant streaming call)
+      finalContent = assistantMsg.content || "";
+      finalUsage = completionData.usage ?? finalUsage;
       break;
     }
 
-    // --- Final streaming response ---
-    const streamRes = await fetchWithRetry("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${openaiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: MODEL,
-        messages,
-        tools: TOOLS,
-        tool_choice: "none",
-        stream: true,
-        stream_options: { include_usage: true },
-        max_tokens: 4096,
-      }),
+    // --- Save final response and send to client ---
+    await supabase.from("chat_messages").insert({
+      customer_id: customer.id,
+      session_id: trimmedSessionId,
+      role: "assistant",
+      content: finalContent,
+      model: MODEL,
+      tokens_prompt: finalUsage.prompt_tokens || null,
+      tokens_completion: finalUsage.completion_tokens || null,
     });
 
-    if (!streamRes.ok) {
-      const errBody = await streamRes.text();
-      log("error", "openai_stream_failed", { status: streamRes.status, body: errBody });
-      return jsonError("AI service error", 502, req);
-    }
+    log("info", "chat_ok", {
+      customerId: customer.id,
+      ms: Date.now() - t0,
+      tokens: (finalUsage.prompt_tokens || 0) + (finalUsage.completion_tokens || 0),
+    });
 
-    let fullContent = "";
-    let usage = { prompt_tokens: 0, completion_tokens: 0 };
-
+    // Send as SSE (compatible with frontend streaming reader)
     const readable = new ReadableStream({
-      async start(controller) {
+      start(controller) {
         const encoder = new TextEncoder();
-        const reader = streamRes.body!.getReader();
-        const decoder = new TextDecoder();
-        let buffer = "";
-
-        try {
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-
-            buffer += decoder.decode(value, { stream: true });
-            const lines = buffer.split("\n");
-            buffer = lines.pop() || "";
-
-            for (const line of lines) {
-              const trimmed = line.trim();
-              if (!trimmed || !trimmed.startsWith("data: ")) continue;
-              const data = trimmed.slice(6);
-              if (data === "[DONE]") continue;
-
-              try {
-                const parsed = JSON.parse(data);
-                const delta = parsed.choices?.[0]?.delta;
-                if (delta?.content) {
-                  fullContent += delta.content;
-                  controller.enqueue(
-                    encoder.encode(`data: ${JSON.stringify({ chunk: delta.content })}\n\n`),
-                  );
-                }
-                if (parsed.usage) {
-                  usage = parsed.usage;
-                }
-              } catch {
-                // Skip malformed chunks
-              }
-            }
-          }
-
-          controller.enqueue(encoder.encode("data: [DONE]\n\n"));
-          controller.close();
-
-          // Save assistant response to DB (fire-and-forget)
-          supabase.from("chat_messages").insert({
-            customer_id: customer.id,
-            session_id: trimmedSessionId,
-            role: "assistant",
-            content: fullContent,
-            model: MODEL,
-            tokens_prompt: usage.prompt_tokens || null,
-            tokens_completion: usage.completion_tokens || null,
-          }).then(({ error: insertErr }) => {
-            if (insertErr) log("error", "save_response_failed", { error: insertErr.message });
-          });
-
-          log("info", "chat_ok", {
-            customerId: customer.id,
-            ms: Date.now() - t0,
-            tokens: usage.prompt_tokens + usage.completion_tokens,
-          });
-        } catch (err) {
-          log("error", "stream_error", { error: String(err) });
-          try { controller.close(); } catch { /* already closed */ }
-        }
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ chunk: finalContent })}\n\n`));
+        controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+        controller.close();
       },
     });
 
