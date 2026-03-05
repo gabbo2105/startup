@@ -7,7 +7,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked@15.0.7/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     /* ===== LIGHT ===== */
@@ -397,7 +398,7 @@
 (function(){
   var SUPA_URL='https://wvlqjpmphfhkctupwvvd.supabase.co';
   var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind2bHFqcG1waGZoa2N0dXB3dnZkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA3MzMwNjIsImV4cCI6MjA4NjMwOTA2Mn0.Ov8iONgG-Ou4CuoMFBZ3S7WAlhHaEYrjiiE8u6z9MOg';
-  var N8N_PROXY=SUPA_URL+'/functions/v1/chat-proxy';
+  var N8N_PROXY=SUPA_URL+'/functions/v1/ai-chat';
   var sb=window.supabase.createClient(SUPA_URL,SUPA_KEY);
   var customer=null,sessId=crypto.randomUUID(),busy=false;
   var cart=[];
@@ -658,7 +659,7 @@
   function addMsg(role,text,products){
     var el=document.getElementById('msgs'),d=document.createElement('div');d.className='msg';
     var isU=role==='user';
-    d.innerHTML='<div class="msg-head"><div class="msg-icon '+(isU?'u':'b')+'">'+(isU?'Tu':'HS')+'</div><div class="msg-label '+(isU?'u':'b')+'">'+(isU?'Tu':'Hotel Supply Pro')+'</div></div><div class="msg-body">'+(isU?renderUser(text):marked.parse(text))+'</div>';
+    d.innerHTML='<div class="msg-head"><div class="msg-icon '+(isU?'u':'b')+'">'+(isU?'Tu':'HS')+'</div><div class="msg-label '+(isU?'u':'b')+'">'+(isU?'Tu':'Hotel Supply Pro')+'</div></div><div class="msg-body">'+(isU?renderUser(text):DOMPurify.sanitize(marked.parse(text)))+'</div>';
     if(!isU)injectInlineCartButtons(d);
     el.appendChild(d);
     document.getElementById('msg-area').scrollTop=document.getElementById('msg-area').scrollHeight;
@@ -693,11 +694,37 @@
       var session=await sb.auth.getSession();
       var token=session.data.session?session.data.session.access_token:'';
       var res=await fetch(N8N_PROXY,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({chatInput:text,sessionId:sessId})});
-      hideTyping();var data=await res.json();
-      var raw=typeof data==='string'?data:(data.output||data.text||data.response||data.message||JSON.stringify(data));
-      var p=parseResponse(raw);
-      if(p.cartActions.length)applyCartActions(p.cartActions);
-      addMsg('bot',p.text,p.products);
+      hideTyping();
+      var ct=(res.headers.get('content-type')||'').toLowerCase();
+      if(ct.includes('text/event-stream')||ct.includes('application/x-ndjson')){
+        // --- Streaming response ---
+        var reader=res.body.getReader(),decoder=new TextDecoder(),full='';
+        var el=document.getElementById('msgs'),d=document.createElement('div');d.className='msg';
+        d.innerHTML='<div class="msg-head"><div class="msg-icon b">HS</div><div class="msg-label b">Hotel Supply Pro</div></div><div class="msg-body"></div>';
+        el.appendChild(d);var bodyEl=d.querySelector('.msg-body');
+        while(true){
+          var chunk=await reader.read();if(chunk.done)break;
+          var lines=decoder.decode(chunk.value,{stream:true}).split('\n');
+          for(var i=0;i<lines.length;i++){
+            var ln=lines[i].trim();if(!ln||ln.startsWith(':'))continue;
+            if(ln.startsWith('data: ')){var dd=ln.slice(6);if(dd==='[DONE]')continue;try{var j=JSON.parse(dd);full+=j.chunk||j.token||j.text||''}catch(e){full+=dd}}
+            else if(ln.charAt(0)==='{'){try{var j=JSON.parse(ln);full+=j.chunk||j.token||j.text||j.output||''}catch(e){full+=ln}}
+            else{full+=ln}
+          }
+          bodyEl.innerHTML=DOMPurify.sanitize(marked.parse(full));
+          document.getElementById('msg-area').scrollTop=document.getElementById('msg-area').scrollHeight;
+        }
+        var p=parseResponse(full);if(p.cartActions.length)applyCartActions(p.cartActions);
+        bodyEl.innerHTML=DOMPurify.sanitize(marked.parse(p.text));injectInlineCartButtons(d);
+        document.getElementById('msg-area').scrollTop=document.getElementById('msg-area').scrollHeight;
+      }else{
+        // --- Standard JSON response ---
+        var data=await res.json();
+        var raw=typeof data==='string'?data:(data.output||data.text||data.response||data.message||JSON.stringify(data));
+        var p=parseResponse(raw);
+        if(p.cartActions.length)applyCartActions(p.cartActions);
+        addMsg('bot',p.text,p.products);
+      }
     }catch(e){hideTyping();addMsg('bot','Errore di comunicazione. Riprova.')}
     busy=false;document.getElementById('btn-send').disabled=false;document.getElementById('cin').focus();
   }
@@ -862,43 +889,32 @@
     var btnM=document.getElementById('op-modify');
     btnC.disabled=true;btnM.disabled=true;btnC.textContent='Invio in corso...';
     try{
-      var total=cart.reduce(function(s,c){return s+c.price*c.qty},0);
-      // Create order on Supabase
-      var or=await sb.from('orders').insert({
-        customer_id:customer.id,
-        total:Math.round(total*100)/100,
-        delivery_hotel:customer.hotel_name||'',
-        delivery_address:customer.hotel_address||'',
-        billing_company:customer.company_name||'',
-        billing_vat:customer.vat_number||'',
-        contact_person:customer.contact_person||'',
-        contact_phone:customer.phone||'',
-        status:'pending'
-      }).select('id,order_number').single();
+      // Server-side order creation with validated prices
+      var p_items=cart.filter(function(c){return c.id&&c.id.match(/^[0-9a-f-]{36}$/)}).map(function(c){return{product_id:c.id,qty:c.qty}});
+      if(!p_items.length)throw new Error('Nessun prodotto valido nel carrello');
+      var or=await sb.rpc('create_order',{p_items:p_items});
       if(or.error)throw or.error;
-      // Create order items
-      var items=cart.map(function(c){return{order_id:or.data.id,product_id:c.id&&c.id.match(/^[0-9a-f-]{36}$/)?c.id:null,supplier_code:c.supplier_code||null,description:c.description,supplier_name:c.supplier_name,selling_uom:c.selling_uom,unit_price:c.price,qty:c.qty}});
-      var ir=await sb.from('order_items').insert(items);
-      if(ir.error)throw ir.error;
 
-      // Build order summary for agent
       var orderNum=or.data.order_number;
-      var summary='ORDINE CONFERMATO #'+orderNum+' — Invia email di conferma.\n';
-      summary+='Prodotti:\n';
-      cart.forEach(function(c){summary+='- '+c.qty+'x '+c.description+' [cod:'+( c.supplier_code||'N/A')+'] ('+c.supplier_name+', '+(c.price||0).toFixed(2)+' EUR)\n'});
-      summary+='Totale: '+total.toFixed(2)+' EUR\n';
-      summary+='Consegna: '+customer.hotel_name+', '+customer.hotel_address+'\n';
-      summary+='Fatturazione: '+customer.company_name+', P.IVA '+customer.vat_number+'\n';
-      summary+='Referente: '+customer.contact_person+', '+customer.phone+'\n';
-      summary+='Email cliente: '+customer.email;
+      var orderId=or.data.order_id;
+      var total=or.data.total;
+
+      // Send confirmation email directly via Resend
+      var session=await sb.auth.getSession();
+      var token=session.data.session?session.data.session.access_token:'';
+      fetch(SUPA_URL+'/functions/v1/send-order-email',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+        body:JSON.stringify({order_id:orderId})
+      }).catch(function(e){console.error('Email send failed:',e)});
 
       // Clear cart
       cart=[];renderCartSidebar();syncCart();
       // Close popup
       closeOrderPopup();
       showView('chat');
-      // Send to agent (agent will send email)
-      doSend(summary);
+      // Show confirmation locally (no agent involved)
+      addMsg('bot','Ordine **#'+orderNum+'** confermato con successo! Totale: '+(+total).toFixed(2)+' EUR.\n\nHo inviato il riepilogo via email. Puoi controllare lo stato nella sezione **I miei ordini**.\n\nPosso fare altro per te?');
     }catch(e){
       console.error('submitOrder error:',e);
       closeOrderPopup();
